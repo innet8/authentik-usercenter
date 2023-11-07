@@ -730,8 +730,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "账户不能为空")
         if 'password' not in request.data:
             return self.errUserResponse("", "密码不能为空")
+        if 'source' not in request.data:
+            return self.errUserResponse("", "来源不能为空")
         
         username = request.data.get("username")
+        source = request.data.get("source")
         
         if User.objects.filter(username=request.data.get("username")).exists():
             return self.errUserResponse("", "账户已存在")
@@ -742,6 +745,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     username=username,
                     name=username,
                     type=UserTypes.INTERNAL,
+                    path=source,
                 )
                 user.set_password(request.data.get("password"))
                 user.save()
@@ -750,6 +754,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     "username": user.username,
                     "user_uid": user.uid,
                     "user_pk": user.pk,
+                    "source": user.path,
                 }
                 return self.sucUserResponse(data)
             except IntegrityError as exc:
