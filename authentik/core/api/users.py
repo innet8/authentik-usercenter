@@ -727,14 +727,14 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def register(self, request: Request) -> Response:
         """Register a new user account"""
         if 'username' not in request.data:
-            return self.errUserResponse("", "username field is required")
+            return self.errUserResponse("", "账户不能为空")
         if 'password' not in request.data:
-            return self.errUserResponse("", "password field is required")
+            return self.errUserResponse("", "密码不能为空")
         
         username = request.data.get("username")
         
         if User.objects.filter(username=request.data.get("username")).exists():
-            return self.errUserResponse("", "User already exists")
+            return self.errUserResponse("", "账户已存在")
         
         with atomic():
             try:
@@ -779,9 +779,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def login(self, request: Request) -> Response:
         """ Login user account"""
         if 'username' not in request.data:
-            return self.errUserResponse("", "username field is required")
+            return self.errUserResponse("", "账户不能为空")
         if 'password' not in request.data:
-            return self.errUserResponse("", "password field is required")
+            return self.errUserResponse("", "密码不能为空")
 
         try:
             user = User.objects.get(username=request.data.get("username"))
@@ -794,16 +794,16 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 }
                 return self.sucUserResponse(data)
             else :
-                return self.errUserResponse("", "Account password error")
+                return self.errUserResponse("", "账户密码错误")
         except User.DoesNotExist:
-            return self.errUserResponse("", "Account password error")
+            return self.errUserResponse("", "账户密码错误")
         except IntegrityError as exc:
             return self.errUserResponse("", str(exc))
         
-    def sucUserResponse(self, data="", msg="success", code=1, status=200):
+    def sucUserResponse(self, data="", msg="请求成功", code=1, status=200):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
     
-    def errUserResponse(self, data="", msg="", code=0, status=400):
+    def errUserResponse(self, data="", msg="请求错误", code=0, status=400):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
