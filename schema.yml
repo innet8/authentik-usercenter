@@ -5073,6 +5073,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/GenericError'
           description: ''
+  /core/users/login/:
+    post:
+      operationId: core_users_login_create
+      description: Login user account
+      tags:
+      - core
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserServiceAccountRequest'
+        required: true
+      security:
+      - authentik: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserServiceAccountResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
   /core/users/me/:
     get:
       operationId: core_users_me_retrieve
@@ -5119,6 +5153,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserPath'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /core/users/register/:
+    post:
+      operationId: core_users_register_create
+      description: Register a new user account
+      tags:
+      - core
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserServiceAccountRequest'
+        required: true
+      security:
+      - authentik: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserServiceAccountResponse'
           description: ''
         '400':
           content:
@@ -42300,27 +42368,19 @@ components:
     UserServiceAccountRequest:
       type: object
       properties:
-        name:
+        username:
           type: string
           minLength: 1
-        create_group:
-          type: boolean
-          default: false
-        expiring:
-          type: boolean
-          default: true
-        expires:
+        password:
           type: string
-          format: date-time
-          description: If not provided, valid for 360 days
+          minLength: 1
       required:
-      - name
+      - password
+      - username
     UserServiceAccountResponse:
       type: object
       properties:
         username:
-          type: string
-        token:
           type: string
         user_uid:
           type: string
@@ -42329,7 +42389,6 @@ components:
         group_pk:
           type: string
       required:
-      - token
       - user_pk
       - user_uid
       - username

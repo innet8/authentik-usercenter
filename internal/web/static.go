@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/go-http-utils/etag"
@@ -10,7 +11,23 @@ import (
 	"goauthentik.io/internal/constants"
 	"goauthentik.io/internal/utils/web"
 	staticWeb "goauthentik.io/web"
+	staticWebtwo "goauthentik.io/webtwo"
 )
+
+func handleHTML(w http.ResponseWriter, r *http.Request) {
+	// 使用模板引擎渲染 HTML 文件
+	tmpl, err := template.New("index").Parse(string(staticWebtwo.IndexByte))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(w, nil)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+}
 
 func (ws *WebServer) configureStatic() {
 	statRouter := ws.lh.NewRoute().Subrouter()
@@ -25,6 +42,10 @@ func (ws *WebServer) configureStatic() {
 	helpHandler := http.FileServer(http.Dir("./website/help/"))
 	indexLessRouter.PathPrefix("/static/dist/").Handler(distHandler)
 	indexLessRouter.PathPrefix("/static/authentik/").Handler(authentikHandler)
+
+	// 2023-11-07 weifashi
+	indexLessRouter.HandleFunc("/page/{id}", handleHTML)
+	indexLessRouter.PathPrefix("/statics/dist/").Handler(http.StripPrefix("/statics/dist/", http.FileServer(http.Dir("./webtwo/dist"))))
 
 	// Prevent font-loading issues on safari, which loads fonts relatively to the URL the browser is on
 	indexLessRouter.PathPrefix("/if/flow/{flow_slug}/assets").HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
