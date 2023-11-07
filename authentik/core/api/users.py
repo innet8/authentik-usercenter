@@ -51,6 +51,7 @@ from rest_framework.serializers import (
 )
 from rest_framework.validators import UniqueValidator
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import AllowAny
 from structlog.stdlib import get_logger
 
 from authentik.admin.api.metrics import CoordinateSerializer
@@ -701,3 +702,96 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             sessions.delete()
             LOGGER.debug("Deleted user's sessions", user=instance.username)
         return response
+
+    @extend_schema(
+            request=inline_serializer(
+                "UserServiceAccountSerializer",
+                {
+                    "username": CharField(required=True),
+                    "password": CharField(required=True),
+                },
+            ),
+            responses={
+                200: inline_serializer(
+                    "UserServiceAccountResponse",
+                    {
+                        "username": CharField(required=True),
+                        "user_uid": CharField(required=True),
+                        "user_pk": IntegerField(required=True),
+                        "group_pk": CharField(required=False),
+                    },
+                )
+            },
+        )
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def register(self, request: Request) -> Response:
+        """Register a new user account"""
+        if 'username' not in request.data:
+            return Response(data={"error": "username field is required"}, status=400)
+        if 'password' not in request.data:
+            return Response(data={"error": "password field is required"}, status=400)
+        username = request.data.get("username")
+
+        with atomic():
+            try:
+                user: User = User.objects.create(
+                    username=username,
+                    name=username,
+                    type=UserTypes.INTERNAL,
+                )
+                user.set_password(request.data.get("password"))
+                user.save()
+
+                response = {
+                    "username": user.username,
+                    "user_uid": user.uid,
+                    "user_pk": user.pk,
+                }
+                return Response(response)
+            except IntegrityError as exc:
+                return Response(data={"non_field_errors": [str(exc)]}, status=400)
+
+    @extend_schema(
+        request=inline_serializer(
+            "UserServiceAccountSerializer",
+            {
+                "username": CharField(required=True),
+                "password": CharField(required=True),
+            },
+        ),
+        responses={
+            200: inline_serializer(
+                "UserServiceAccountResponse",
+                {
+                    "username": CharField(required=True),
+                    "user_uid": CharField(required=True),
+                    "user_pk": IntegerField(required=True),
+                    "group_pk": CharField(required=False),
+                },
+            )
+        },
+    )
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def login(self, request: Request) -> Response:
+        """ Login user account"""
+        if 'username' not in request.data:
+            return Response(data={"error": "username field is required"}, status=400)
+        if 'password' not in request.data:
+            return Response(data={"error": "password field is required"}, status=400)
+
+        try:
+            user = User.objects.get(username=request.data.get("username"))
+            re = user.check_password(request.data.get("password"))
+            if re :
+                # return Response(data={"success": "good"}, status=200)
+                response = {
+                        "username": user.username,
+                        "user_uid": user.uid,
+                        "user_pk": user.pk,
+                    }
+                return Response(response)
+            else :
+                return Response(data={"error": "error info"}, status=400)
+        except User.DoesNotExist:
+            # 未找到用户的情况下执行相关操作
+            return Response(data={"error": "error info"}, status=400)
