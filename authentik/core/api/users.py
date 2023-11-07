@@ -727,11 +727,15 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def register(self, request: Request) -> Response:
         """Register a new user account"""
         if 'username' not in request.data:
-            return Response(data={"error": "username field is required"}, status=400)
+            return self.errUserResponse("", "username field is required")
         if 'password' not in request.data:
-            return Response(data={"error": "password field is required"}, status=400)
+            return self.errUserResponse("", "password field is required")
+        
         username = request.data.get("username")
-
+        
+        if User.objects.filter(username=request.data.get("username")).exists():
+            return self.errUserResponse("", "User already exists")
+        
         with atomic():
             try:
                 user: User = User.objects.create(
@@ -742,14 +746,14 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 user.set_password(request.data.get("password"))
                 user.save()
 
-                response = {
+                data = {
                     "username": user.username,
                     "user_uid": user.uid,
                     "user_pk": user.pk,
                 }
-                return Response(response)
+                return self.sucUserResponse(data)
             except IntegrityError as exc:
-                return Response(data={"non_field_errors": [str(exc)]}, status=400)
+                return self.errUserResponse("", str(exc))
 
     @extend_schema(
         request=inline_serializer(
@@ -775,23 +779,31 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def login(self, request: Request) -> Response:
         """ Login user account"""
         if 'username' not in request.data:
-            return Response(data={"error": "username field is required"}, status=400)
+            return self.errUserResponse("", "username field is required")
         if 'password' not in request.data:
-            return Response(data={"error": "password field is required"}, status=400)
+            return self.errUserResponse("", "password field is required")
 
         try:
             user = User.objects.get(username=request.data.get("username"))
             re = user.check_password(request.data.get("password"))
             if re :
-                # return Response(data={"success": "good"}, status=200)
-                response = {
-                        "username": user.username,
-                        "user_uid": user.uid,
-                        "user_pk": user.pk,
-                    }
-                return Response(response)
+                data = {
+                    "username": user.username,
+                    "user_uid": user.uid, 
+                    "user_pk": user.pk,
+                }
+                return self.sucUserResponse(data)
             else :
-                return Response(data={"error": "error info"}, status=400)
+                return self.errUserResponse("", "Account password error")
         except User.DoesNotExist:
-            # 未找到用户的情况下执行相关操作
-            return Response(data={"error": "error info"}, status=400)
+            return self.errUserResponse("", "Account password error")
+        except IntegrityError as exc:
+            return self.errUserResponse("", str(exc))
+        
+    def sucUserResponse(self, data="", msg="success", code=1, status=200):
+        response = {"data": data, "msg": msg, "code": code}
+        return Response(response, status=status)
+    
+    def errUserResponse(self, data="", msg="", code=0, status=400):
+        response = {"data": data, "msg": msg, "code": code}
+        return Response(response, status=status)
