@@ -146,9 +146,9 @@ const handleLogin = () => {
                 userState.info = data
                 if(callback){
                     callback = callback.indexOf("?") == -1 ? callback + "?aktoken=" : callback + "&aktoken="
-                    parent.window.location.href = callback + "1312312312312312"
+                    parent.window.location.href = callback + data.token
                 }else{
-                    parent.window.location.href =  "/success"
+                    parent.window.location.href =  window.location.origin + "/page/success?aktoken=" + data.token
                 }
             })
             .catch( res => {
@@ -180,6 +180,7 @@ const handleReg = () => {
                 password: formData.value.password,
                 source: (route.query.source + '') || 'sys-web',
             }).then(({ data,msg }) => {
+                message.success( $t("注册成功") )
                 loginType.value = "login"
             })
             .catch( res => {

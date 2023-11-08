@@ -54,5 +54,6 @@
     "密码不能为空": "le mot de passe ne peut pas être vide",
     "账户密码错误": "Le mot de passe du compte est erroné",
     "请求成功": "Demande réussie",
-    "请求错误": "Erreur de demande"
+    "请求错误": "Erreur de demande",
+    "注册成功": "succès de l'inscription"
 }

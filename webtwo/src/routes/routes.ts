@@ -1,5 +1,4 @@
 import { $t } from "@/lang/index"
-import Layout from '@/layout/index.vue'
 import Login from '@/views/login.vue'
 import Register from '@/views/register.vue'
 import Success from '@/views/success.vue'

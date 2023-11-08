@@ -6,7 +6,7 @@ UID = $(shell id -u)
 GID = $(shell id -g)
 NPM_VERSION = $(shell python -m scripts.npm_version)
 PY_SOURCES = authentik tests scripts lifecycle
-DOCKER_IMAGE ?= "authentik-usercenter:test"
+DOCKER_IMAGE ?= "authentik-usercenter:latest"
 
 pg_user := $(shell python -m authentik.lib.config postgresql.user 2>/dev/null)
 pg_host := $(shell python -m authentik.lib.config postgresql.host 2>/dev/null)
@@ -205,6 +205,17 @@ website-build:
 
 website-watch:  ## Build and watch the documentation website, updating automatically
 	cd website && npm run watch
+
+
+#########################
+## Webtwo
+#########################
+
+webtwo-build: webtwo-install  ## Build the Authentik UI
+	cd webtwo && npm run build
+
+webtwo-install:  ## Install the necessary libraries to build the Authentik UI
+	cd webtwo && npm ci
 
 #########################
 ## Docker

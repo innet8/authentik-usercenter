@@ -23,21 +23,21 @@ export default function createDemoRouter(app, routes) {
         }
         //
         // 需要登录
-        if(to.name !== 'login' && to.meta?.login !== false && !userStore.info?.token){
-            router.replace({name:'login'})
-            return;
-        }
+        // if(to.name !== 'login' && to.meta?.login !== false && !userStore.info?.token){
+        //     router.replace({name:'login'})
+        //     return;
+        // }
         // 已经登录
-        if(to.name == 'login' && userStore.info?.token){
-            router.replace({name:'/'})
-            return;
-        }
+        // if(to.name == 'login' && userStore.info?.token){
+        //     router.replace({name:'/'})
+        //     return;
+        // }
         // 进度
-        if (!from || to.path !== from.path) {
-            if (loadingBarApiRef.value) {
-                loadingBarApiRef.value.start()
-            }
-        }
+        // if (!from || to.path !== from.path) {
+        //     if (loadingBarApiRef.value) {
+        //         loadingBarApiRef.value.start()
+        //     }
+        // }
         //
         next()
     })
