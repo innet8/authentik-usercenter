@@ -2,7 +2,10 @@
 from datetime import timedelta
 from json import loads
 from typing import Any, Optional
+import jwt
+import datetime
 
+from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.sessions.backends.cache import KEY_PREFIX
 from django.core.cache import cache
@@ -792,10 +795,20 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             user = User.objects.get(username=request.data.get("username"))
             re = user.check_password(request.data.get("password"))
             if re :
+                # 设置 JWT 的 payload 数据
+                payload = {
+                    "user_id": user.pk,
+                    "username": user.username,
+                    "source": user.path,
+                    "exp": datetime.datetime.utcnow() + settings.JWT_EXPIRATION_DELTA  # 设置过期时间为当前时间的一天后
+                }
+                token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
                 data = {
                     "username": user.username,
                     "user_uid": user.uid, 
                     "user_pk": user.pk,
+                    "source": user.path,
+                    "token": token
                 }
                 return self.sucUserResponse(data)
             else :

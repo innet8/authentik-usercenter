@@ -2,6 +2,7 @@
 
 import importlib
 import os
+import datetime
 from hashlib import sha512
 from pathlib import Path
 from urllib.parse import quote_plus
@@ -427,3 +428,7 @@ try:
     _update_settings("authentik.enterprise.settings")
 except ImportError:
     pass
+
+JWT_SECRET_KEY = 'ca44643ea575862587adfd890f24ac3d'
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_DELTA = datetime.timedelta(days=1)
