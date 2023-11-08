@@ -432,3 +432,5 @@ except ImportError:
 JWT_SECRET_KEY = 'ca44643ea575862587adfd890f24ac3d'
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_DELTA = datetime.timedelta(days=1)
+
+API_TOKEN = '6dcc643ea575862587adfd890a8cc7'

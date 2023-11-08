@@ -3,6 +3,7 @@ from datetime import timedelta
 from json import loads
 from typing import Any, Optional
 import jwt
+import base64
 import datetime
 
 from django.conf import settings
@@ -747,7 +748,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 user: User = User.objects.create(
                     username=username,
                     name=username,
-                    type=UserTypes.INTERNAL,
+                    type=UserTypes.EXTERNAL,
                     path=source,
                 )
                 user.set_password(request.data.get("password"))
@@ -797,7 +798,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             if re :
                 # 设置 JWT 的 payload 数据
                 payload = {
-                    "user_id": user.pk,
+                    "user_pk": user.pk,
                     "username": user.username,
                     "source": user.path,
                     "exp": datetime.datetime.utcnow() + settings.JWT_EXPIRATION_DELTA  # 设置过期时间为当前时间的一天后
@@ -808,7 +809,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     "user_uid": user.uid, 
                     "user_pk": user.pk,
                     "source": user.path,
-                    "token": token
+                    "token": base64.b64encode(token.encode())
                 }
                 return self.sucUserResponse(data)
             else :
@@ -818,6 +819,18 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         except IntegrityError as exc:
             return self.errUserResponse("", str(exc))
         
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def getUsers(self, request: Request) -> Response:
+        """ Get users """
+        if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:  # 检查请求头部中的 API Token
+            users = User.objects.filter(type='external').values('username')
+            user_data = list(users)
+            return self.sucUserResponse(user_data)
+        else:
+            return self.errUserResponse("", "INVALID TOKENk")
+
+        
+
     def sucUserResponse(self, data="", msg="请求成功", code=1, status=200):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
