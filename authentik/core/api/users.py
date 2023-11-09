@@ -793,7 +793,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "密码不能为空")
 
         try:
-            user = User.objects.get(username=request.data.get("username"))
+            user = User.objects.get(username=request.data.get("username"), type=UserTypes.EXTERNAL)
+            if not user.is_active:
+                return self.errUserResponse("", "账户已禁用")
             re = user.check_password(request.data.get("password"))
             if re :
                 # 设置 JWT 的 payload 数据
