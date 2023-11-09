@@ -1,12 +1,12 @@
 <template>
-    <div class="page-login child-view">
+    <div class="page-login child-view" :style="customStyles">
         <div class="login-body">
-            <div class="login-box">
+            <div class="login-box" :style="customStyles">
                 <h2 class="login-title">
-                    <span>{{ loginMode == "qrcode" ? $t("authentik-go") : $t("authentik-go") }}</span>
+                    <span>{{ config.title || ( loginType == 'reg' ? $t("注册") : $t("登录")) }}</span>
                 </h2>
                 <p class="login-subtitle">
-                    {{ $t("输入您的凭证以访问您的帐户") }}
+                    {{ config.subtitle || $t("输入您的凭证以访问您的帐户") }}
                 </p>
                 <transition name="login-mode">
                     <n-form ref="formRef" :rules="rules" label-placement="left" :model="formData">
@@ -50,10 +50,10 @@
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-button v-if="loginType == 'login'" :loading="loadIng" @click="handleLogin" type="primary"
+                            <n-button v-if="loginType == 'login'" :loading="loadIng" @click="handleLogin" :type="config.btncolor"
                                 size="large">{{ $t("登录") }}</n-button>
                             <n-button v-else type="primary" :loading="loadIng" @click="handleReg">{{ $t("注册") }}</n-button>
-                            <div class="login-switch">
+                            <div class="login-switch" v-if="config.switch !== 'false'">
                                 <template v-if="loginType == 'login'">
                                     {{ $t("还没有帐号？") }}
                                     <a href="javascript:void(0)" @click="changeLoginType"> {{ $t("注册帐号") }}</a>
@@ -75,7 +75,6 @@
 import { ref } from "vue"
 import { userLogin, userReg } from "@/api/modules/user"
 import { useMessage,FormItemRule } from "naive-ui"
-import utils from "@/utils/utils"
 import { UserStore } from "@/store/user"
 import { useRoute } from "vue-router"
 import { MailOutline, LockClosedOutline, CheckmarkCircleOutline } from "@vicons/ionicons5"
@@ -99,20 +98,48 @@ const formData = ref({
     invite: "",
 })
 
+// 路由参数配置
+const config = ref({
+    language: route.query.language || 'zh',         //  显示语言 - en、zh、zh-cht、fr、id、ja、ko
+    source: route.query.source  || '',              //  来源
+    callback : route.query.callback || '',          //  登录成功后浏览器去往的地址
+    title : route.query.title || '',                //  标题
+    subtitle : route.query.subtitle || '',          //  标题下方的描述
+    switch: route.query.switch || 'true',           //  打开切换注册的按钮
+    color : route.query.color || '',                //  字体色 - 透明色：transparent 白色：white
+    bgcolor : route.query.bgColor || 'white',       //  背景色 - 透明色：transparent 白色：white
+    shadow : route.query.shadow || '',              //  阴影 - 不显示：none
+    btncolor : route.query.btnColor || 'primary',   //  按钮色 - default、tertiary、primary、info、success、warning 和 error
+    theme : route.query.theme ||   'default',       //  主题
+})
+
+// 样式
+const customStyles = ref({
+    color: config.value.color,
+    backgroundColor: config.value.bgcolor,
+    boxShadow: config.value.shadow,
+})
+
+
 const rules = ref({
     email: {
         required: true,
         validator (rule: FormItemRule, value: string) {
             if (!value) {
-              return new Error($t('请输入您的账号'))
-            }else if (!utils.isEmail(value)) {
-            //   return new Error($t('请输入正确的邮箱'))
+                return new Error($t('请输入您的账号'))
             }
+            // else if (!utils.isEmail(value)) {
+            //     return new Error($t('请输入正确的邮箱'))
+            // }
             return true
         },
         trigger:  ['input','blur']
     },
-    password: { required: true, message: $t('输入您的密码'), trigger: ['input','blur'] },
+    password: {
+        required: true,
+        message: $t('输入您的密码'),
+        trigger: ['input','blur']
+    },
     confirmPassword: {
         required: true,
         validator (rule: FormItemRule, value: string) {
@@ -130,7 +157,7 @@ const rules = ref({
 // 登录
 const handleLogin = () => {
     try {
-        let callback = route.query.callback;
+        let callback = config.value.callback;
         formRef.value?.validate((errors) => {
             if (errors) {
                 return
@@ -143,17 +170,16 @@ const handleLogin = () => {
                 code_id: codeId.value,
                 code: code.value,
             }).then(({ data, msg }) => {
-                console.log(data)
                 userState.info = data
                 if(callback){
-                    callback = callback.indexOf("?") == -1 ? callback + "?aktoken=" : callback + "&aktoken="
-                    parent.window.location.href = callback + "1312312312312312"
+                    callback = callback.indexOf("?") == -1 ? callback + "?ak-token=" : callback + "&ak-token="
+                    parent.window.location.href = callback + data.token
                 }else{
-                    parent.window.location.href =  "/success"
+                    parent.window.location.href =  window.location.origin + `/page/success?language=${config.value.language}&ak-token=${data.token}`
                 }
             })
             .catch( res => {
-                message.error(res.msg)
+                message.error( $t(res.data.response.data.msg) )
                 if (res.data.code == "need") {
                     onBlur()
                 }
@@ -179,12 +205,13 @@ const handleReg = () => {
             userReg({
                 username: formData.value.email,
                 password: formData.value.password,
-                source: (route.query.source + '') || 'sys-web',
+                source: (config.value.source + '') || 'sys-web',
             }).then(({ data,msg }) => {
+                message.success( $t("注册成功") )
                 loginType.value = "login"
             })
             .catch( res => {
-                message.error(res.msg)
+                message.error( $t(res.data.response.data.msg) )
             }).finally(() => {
                 loadIng.value = false
             })
@@ -243,7 +270,7 @@ const refreshCode = () => {
         }
 
         .login-box {
-            @apply bg-bg-login-box rounded w-400 shadow-login-box-Shadow relative;
+            @apply bg-bg-login-box shadow-login-box-Shadow rounded w-400 relative;
             max-width: 100%;
 
             .login-mode-switch {
@@ -270,7 +297,7 @@ const refreshCode = () => {
             }
 
             .login-title {
-                @apply text-24 font-semibold text-center mt-46;
+                @apply text-24 font-semibold text-center mt-30;
             }
 
             .login-subtitle {
