@@ -6,7 +6,7 @@
                     <span>{{ config.title || ( loginType == 'reg' ? $t("注册") : $t("登录")) }}</span>
                 </h2>
                 <p class="login-subtitle">
-                    {{ config.subtitle || $t("输入您的凭证以访问您的帐户") }}
+                    {{ config.subtitle || loginType == 'reg' ? $t("输入您的信息以创建帐户") : $t("输入您的凭证以访问您的帐户") }}
                 </p>
                 <transition name="login-mode">
                     <n-form ref="formRef" :rules="rules" label-placement="left" :model="formData">
@@ -196,6 +196,7 @@ const handleLogin = () => {
 // 注册
 const handleReg = () => {
     try {
+        let callback = config.value.callback;
         formRef.value?.validate((errors) => {
             if (errors) {
                 console.log(errors)
@@ -208,7 +209,12 @@ const handleReg = () => {
                 source: (config.value.source + '') || 'sys-web',
             }).then(({ data,msg }) => {
                 message.success( $t("注册成功") )
-                loginType.value = "login"
+                if(callback){
+                    callback = callback.indexOf("?") == -1 ? callback + "?ak-token=" : callback + "&ak-token="
+                    parent.window.location.href = callback + (data.token || "")
+                }else{
+                    loginType.value = "login"
+                }
             })
             .catch( res => {
                 message.error( $t(res.data.response.data.msg) )
