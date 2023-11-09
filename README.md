@@ -45,6 +45,7 @@ COMPOSE_PORT_HTTP=9000    #项目端口
 | data | String | 返回数据 |
 | msg | String | 请求结果描述 |
 | code | Number | 请求结果 0-失败 1-成功 |
+
 请求成功示例
 ```
 {
@@ -76,6 +77,7 @@ COMPOSE_PORT_HTTP=9000    #项目端口
 | data | String | 返回数据 |
 | msg | String | 请求结果描述 |
 | code | Number | 请求结果 0-失败 1-成功 |
+
 请求成功示例
 ```
 {
@@ -108,6 +110,7 @@ COMPOSE_PORT_HTTP=9000    #项目端口
 | data | String | 返回数据 |
 | msg | String | 请求结果描述 |
 | code | Number | 请求结果 0-失败 1-成功 |
+
 请求成功示例
 ```
 {
@@ -143,6 +146,7 @@ COMPOSE_PORT_HTTP=9000    #项目端口
 | data | String | 返回数据 |
 | msg | String | 请求结果描述 |
 | code | Number | 请求结果 0-失败 1-成功 |
+
 请求成功示例
 ```
 {
