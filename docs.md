@@ -4,7 +4,7 @@
 
 地址 http://127.0.0.1:9000/page/login?language=zh
 
-路由参数 [/api/v3/core/users/getInfo/]
+路由参数
 
 | 参数名 | 默认值 | 描述 |
 |--------|--------|--------|
@@ -24,7 +24,7 @@
 
 地址 http://127.0.0.1:9000/page/register?language=zh
 
-路由参数 [/api/v3/core/users/getInfo/]
+路由参数
 
 | 参数名 | 默认值 | 描述 |
 |--------|--------|--------|
