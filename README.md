@@ -26,6 +26,137 @@ COMPOSE_PORT_HTTP=9000    #项目端口
 
 ## 接入文档
 
+#### 登录接口
+
+地址 http://127.0.0.1:9000/api/v3/core/users/login/
+
+请求方式 POST
+
+请求参数
+
+| 参数名 | 类型 | 描述 |
+|--------|--------|--------|
+| username | String | 账户 |
+| password | String | 密码 |
+
+返回参数
+| 参数名 | 类型 | 描述 |
+|--------|--------|--------|
+| data | String | 返回数据 |
+| msg | String | 请求结果描述 |
+| code | Number | 请求结果 0-失败 1-成功 |
+请求成功示例
+```
+{
+	"data": {
+		"token": "ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SjFjMlZ5WDNCcklqbzFNeXdpZFhObGNtNWhiV1VpT2lKMFpYTjBPVGtpTENKemIzVnlZMlVpT2lKd2QyWWlMQ0psZUhBaU9qRTJPVGsyTURFMk1qaDkuRmt2Mi1hUkZ4M3B6Z2RlcWpRbm9kQXhiM2lEbURRbVV0cDJnblBwU2pYWQ=="
+	},
+	"msg": "请求成功",
+	"code": 1
+}
+```
+
+#### 注册接口
+
+地址 http://127.0.0.1:9000/api/v3/core/users/register/
+
+请求方式 POST
+
+请求参数
+
+| 参数名 | 类型 | 描述 |
+|--------|--------|--------|
+| username | String | 账户 |
+| password | String | 密码 |
+| source | String | 来源 |
+
+返回参数
+| 参数名 | 类型 | 描述 |
+|--------|--------|--------|
+| data | String | 返回数据 |
+| msg | String | 请求结果描述 |
+| code | Number | 请求结果 0-失败 1-成功 |
+请求成功示例
+```
+{
+	"data": {
+		"username": "test999",
+		"user_uid": "5d43911708dc996f0466df4383ca6655f5afb761d38a0a380ef4451297708358",
+		"user_pk": 54,
+		"source": "pwf"
+	},
+	"msg": "请求成功",
+	"code": 1
+}
+```
+
+#### 解析Token获取用户信息接口
+
+地址 http://127.0.0.1:9000/api/v3/core/users/getInfo/
+
+请求方式 POST
+
+请求参数
+
+| 参数名 | 类型 | 描述 |
+|--------|--------|--------|
+| token | String | 令牌 |
+
+返回参数
+| 参数名 | 类型 | 描述 |
+|--------|--------|--------|
+| data | String | 返回数据 |
+| msg | String | 请求结果描述 |
+| code | Number | 请求结果 0-失败 1-成功 |
+请求成功示例
+```
+{
+	"data": {
+		"user_pk": 53,
+		"username": "test99",
+		"source": "pwf",
+		"exp": 1699597936
+	},
+	"msg": "请求成功",
+	"code": 1
+}
+```
+
+#### 获取用户列表
+
+地址 http://127.0.0.1:9000/api/v3/core/users/getList/
+
+请求方式 POST
+
+请求头部
+| 参数名 | 类型 | 描述 |
+|--------|--------|--------|
+| APITOKEN | String | settings.py 的 API_TOKEN |
+
+请求参数
+
+无
+
+返回参数
+| 参数名 | 类型 | 描述 |
+|--------|--------|--------|
+| data | String | 返回数据 |
+| msg | String | 请求结果描述 |
+| code | Number | 请求结果 0-失败 1-成功 |
+请求成功示例
+```
+{
+	"data": [
+		{
+			"username": "yh9034w85h"
+		},
+        ...
+	],
+	"msg": "请求成功",
+	"code": 1
+}
+```
+
 #### 登录页
 
 地址 http://127.0.0.1:9000/page/login?language=zh
