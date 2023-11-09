@@ -55,5 +55,6 @@
     "请求成功": "Demande réussie",
     "请求错误": "Erreur de demande",
     "注册成功": "succès de l'inscription",
-    "登录成功!": "connexion réussie!"
+    "登录成功!": "connexion réussie!",
+    "账户已禁用": "Compte désactivé"
 }
