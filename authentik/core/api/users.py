@@ -793,9 +793,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "密码不能为空")
 
         try:
-            user = User.objects.get(username=request.data.get("username"), type=UserTypes.EXTERNAL)
+            user = User.objects.get(username=request.data.get("username"))
             if not user.is_active:
                 return self.errUserResponse("", "账户已禁用")
+            if user.type != UserTypes.EXTERNAL:
+                return self.errUserResponse("", "禁止登录")
             re = user.check_password(request.data.get("password"))
             if re :
                 # 设置 JWT 的 payload 数据
@@ -807,10 +809,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 }
                 token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
                 data = {
-                    "username": user.username,
-                    "user_uid": user.uid, 
-                    "user_pk": user.pk,
-                    "source": user.path,
                     "token": base64.b64encode(token.encode())
                 }
                 return self.sucUserResponse(data)
@@ -821,8 +819,43 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         except IntegrityError as exc:
             return self.errUserResponse("", str(exc))
         
+    @extend_schema(
+        request=inline_serializer(
+            "UserServiceAccountSerializer",
+            {
+                "token": CharField(required=True),
+            },
+        ),
+        responses={
+            200: inline_serializer(
+                "UserServiceAccountResponse",
+                {
+                    "username": CharField(required=True),
+                    "user_uid": CharField(required=True),
+                    "user_pk": IntegerField(required=True),
+                },
+            )
+        },
+    )
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
-    def getUsers(self, request: Request) -> Response:
+    def getInfo(self, request: Request) -> Response:
+        """ Decode token to getUser"""
+        if 'token' not in request.data:
+            return self.errUserResponse("", "令牌不能为空")
+    
+        try:
+            token = base64.b64decode(request.data.get("token")).decode()
+            decoded_payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=settings.JWT_ALGORITHM)
+        except UnicodeDecodeError:
+            return self.errUserResponse("", "无效令牌")
+        except jwt.ExpiredSignatureError:
+            return self.errUserResponse("", "令牌已过期")
+        except jwt.InvalidTokenError:
+            return self.errUserResponse("", "无效令牌")
+        return self.sucUserResponse(decoded_payload)
+
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def getList(self, request: Request) -> Response:
         """ Get users """
         if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:  # 检查请求头部中的 API Token
             users = User.objects.filter(type='external').values('username')
