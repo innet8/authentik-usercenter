@@ -5,6 +5,7 @@ from typing import Any, Optional
 import jwt
 import base64
 import datetime
+import os
 
 from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
@@ -857,6 +858,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def getList(self, request: Request) -> Response:
         """ Get users """
+        print(settings.API_TOKEN)
+        print(os.environ)
         if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:  # 检查请求头部中的 API Token
             users = User.objects.filter(type='external').values('username')
             user_data = list(users)

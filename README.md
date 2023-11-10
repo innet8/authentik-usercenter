@@ -21,6 +21,11 @@ make docker
 PG_PASS=                  #数据库密码
 AUTHENTIK_SECRET_KEY=     #项目key
 COMPOSE_PORT_HTTP=9000    #项目端口
+
+JWT_SECRET_KEY=			  # token密钥（填写随机字符串）
+JWT_ALGORITHM=HS256		  # 加密方式
+
+API_TOKEN=                # API密钥（填写随机字符串）
 ```
 
 
@@ -102,7 +107,7 @@ COMPOSE_PORT_HTTP=9000    #项目端口
 
 | 参数名 | 类型 | 描述 |
 |--------|--------|--------|
-| token | String | 令牌 |
+| token | String | 登录返回的token |
 
 返回参数
 | 参数名 | 类型 | 描述 |
