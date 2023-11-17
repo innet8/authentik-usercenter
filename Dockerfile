@@ -17,22 +17,22 @@ COPY ./SECURITY.md /work/
 RUN npm run build-docs-only
 
 # Stage 2: Build webui
-# FROM --platform=${BUILDPLATFORM} docker.io/node:21 as web-builder
+FROM --platform=${BUILDPLATFORM} docker.io/node:21 as web-builder
 
-# ENV NODE_ENV=production
+ENV NODE_ENV=production
 
-# WORKDIR /work/web
+WORKDIR /work/web
 
-# RUN --mount=type=bind,target=/work/web/package.json,src=./web/package.json \
-#     --mount=type=bind,target=/work/web/package-lock.json,src=./web/package-lock.json \
-#     --mount=type=cache,target=/root/.npm \
-#     npm ci --include=dev
+RUN --mount=type=bind,target=/work/web/package.json,src=./web/package.json \
+    --mount=type=bind,target=/work/web/package-lock.json,src=./web/package-lock.json \
+    --mount=type=cache,target=/root/.npm \
+    npm ci --include=dev
 
-# COPY ./web /work/web/
-# COPY ./website /work/website/
-# COPY ./gen-ts-api /work/web/node_modules/@goauthentik/api
+COPY ./web /work/web/
+COPY ./website /work/website/
+COPY ./gen-ts-api /work/web/node_modules/@goauthentik/api
 
-# RUN npm run build
+RUN npm run build
 
 # Stage 2-2: Build webtwo
 FROM --platform=${BUILDPLATFORM} docker.io/node:21 as webtwo-builder
@@ -67,8 +67,8 @@ COPY ./cmd /go/src/goauthentik.io/cmd
 COPY ./authentik/lib /go/src/goauthentik.io/authentik/lib
 COPY ./web/static.go /go/src/goauthentik.io/web/static.go
 COPY ./webtwo/static.go /go/src/goauthentik.io/webtwo/static.go
-# COPY --from=web-builder /work/web/robots.txt /go/src/goauthentik.io/web/robots.txt
-# COPY --from=web-builder /work/web/security.txt /go/src/goauthentik.io/web/security.txt
+COPY --from=web-builder /work/web/robots.txt /go/src/goauthentik.io/web/robots.txt
+COPY --from=web-builder /work/web/security.txt /go/src/goauthentik.io/web/security.txt
 COPY --from=webtwo-builder /work/webtwo/robots.txt /go/src/goauthentik.io/webtwo/robots.txt
 COPY --from=webtwo-builder /work/webtwo/security.txt /go/src/goauthentik.io/webtwo/security.txt
 COPY --from=webtwo-builder /work/webtwo/dist /go/src/goauthentik.io/webtwo/dist
@@ -159,8 +159,8 @@ COPY ./blueprints /blueprints
 COPY ./lifecycle/ /lifecycle
 COPY --from=go-builder /go/authentik /bin/authentik
 COPY --from=python-deps /ak-root/venv /ak-root/venv
-# COPY --from=web-builder /work/web/dist/ /web/dist/
-# COPY --from=web-builder /work/web/authentik/ /web/authentik/
+COPY --from=web-builder /work/web/dist/ /web/dist/
+COPY --from=web-builder /work/web/authentik/ /web/authentik/
 COPY --from=website-builder /work/website/help/ /website/help/
 COPY --from=webtwo-builder /work/webtwo/dist/ /webtwo/dist/
 COPY --from=geoip /usr/share/GeoIP /geoip
