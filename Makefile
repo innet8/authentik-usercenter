@@ -220,7 +220,7 @@ webtwo-install:  ## Install the necessary libraries to build the Authentik UI
 #########################
 ## Docker
 #########################
-docker:  ## Build a docker image of the current source tree
+docker: gen-client-ts  ## Build a docker image of the current source tree
 	@if [ ! -f .env ]; then \
 		echo "PG_PASS=$$(openssl rand -base64 32)" >> .env; \
 		echo "AUTHENTIK_SECRET_KEY=$$(openssl rand -base64 32)" >> .env; \
