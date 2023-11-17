@@ -67,8 +67,8 @@ COPY ./cmd /go/src/goauthentik.io/cmd
 COPY ./authentik/lib /go/src/goauthentik.io/authentik/lib
 COPY ./web/static.go /go/src/goauthentik.io/web/static.go
 COPY ./webtwo/static.go /go/src/goauthentik.io/webtwo/static.go
-COPY --from=web-builder /work/web/robots.txt /go/src/goauthentik.io/web/robots.txt
-COPY --from=web-builder /work/web/security.txt /go/src/goauthentik.io/web/security.txt
+# COPY --from=web-builder /work/web/robots.txt /go/src/goauthentik.io/web/robots.txt
+# COPY --from=web-builder /work/web/security.txt /go/src/goauthentik.io/web/security.txt
 COPY --from=webtwo-builder /work/webtwo/robots.txt /go/src/goauthentik.io/webtwo/robots.txt
 COPY --from=webtwo-builder /work/webtwo/security.txt /go/src/goauthentik.io/webtwo/security.txt
 COPY --from=webtwo-builder /work/webtwo/dist /go/src/goauthentik.io/webtwo/dist
