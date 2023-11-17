@@ -17,22 +17,22 @@ COPY ./SECURITY.md /work/
 RUN npm run build-docs-only
 
 # Stage 2: Build webui
-FROM --platform=${BUILDPLATFORM} docker.io/node:21 as web-builder
+# FROM --platform=${BUILDPLATFORM} docker.io/node:21 as web-builder
 
-ENV NODE_ENV=production
+# ENV NODE_ENV=production
 
-WORKDIR /work/web
+# WORKDIR /work/web
 
-RUN --mount=type=bind,target=/work/web/package.json,src=./web/package.json \
-    --mount=type=bind,target=/work/web/package-lock.json,src=./web/package-lock.json \
-    --mount=type=cache,target=/root/.npm \
-    npm ci --include=dev
+# RUN --mount=type=bind,target=/work/web/package.json,src=./web/package.json \
+#     --mount=type=bind,target=/work/web/package-lock.json,src=./web/package-lock.json \
+#     --mount=type=cache,target=/root/.npm \
+#     npm ci --include=dev
 
-COPY ./web /work/web/
-COPY ./website /work/website/
-COPY ./gen-ts-api /work/web/node_modules/@goauthentik/api
+# COPY ./web /work/web/
+# COPY ./website /work/website/
+# COPY ./gen-ts-api /work/web/node_modules/@goauthentik/api
 
-RUN npm run build
+# RUN npm run build
 
 # Stage 2-2: Build webtwo
 FROM --platform=${BUILDPLATFORM} docker.io/node:21 as webtwo-builder
