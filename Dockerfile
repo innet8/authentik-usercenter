@@ -159,8 +159,8 @@ COPY ./blueprints /blueprints
 COPY ./lifecycle/ /lifecycle
 COPY --from=go-builder /go/authentik /bin/authentik
 COPY --from=python-deps /ak-root/venv /ak-root/venv
-COPY --from=web-builder /work/web/dist/ /web/dist/
-COPY --from=web-builder /work/web/authentik/ /web/authentik/
+# COPY --from=web-builder /work/web/dist/ /web/dist/
+# COPY --from=web-builder /work/web/authentik/ /web/authentik/
 COPY --from=website-builder /work/website/help/ /website/help/
 COPY --from=webtwo-builder /work/webtwo/dist/ /webtwo/dist/
 COPY --from=geoip /usr/share/GeoIP /geoip
