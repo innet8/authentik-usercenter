@@ -860,7 +860,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """ Get users """
         print(settings.API_TOKEN)
         print(os.environ)
-        if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:  # 检查请求头部中的 API Token
+        if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:
             users = User.objects.filter(type='external').values('username')
             user_data = list(users)
             return self.sucUserResponse(user_data)
