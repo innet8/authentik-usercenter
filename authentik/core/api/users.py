@@ -6,6 +6,7 @@ import jwt
 import base64
 import datetime
 import os
+import re
 
 from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
@@ -733,8 +734,14 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """Register a new user account"""
         if 'username' not in request.data:
             return self.errUserResponse("", "账户不能为空")
+        pattern1 = r'^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$'
+        if not re.match(pattern1, request.data.get("username")):
+            return self.errUserResponse("", "账户必须为邮箱格式")
         if 'password' not in request.data:
             return self.errUserResponse("", "密码不能为空")
+        pattern2 = r'^[A-Za-z\d@$!%*,.?\/{}_+\-&\[\]<>;:"\'\\]{6,}$'
+        if not re.match(pattern2, request.data.get("password")):
+            return self.errUserResponse("", "密码必须为数字英文符号且大于等于6位")
         if 'source' not in request.data:
             return self.errUserResponse("", "来源不能为空")
         
@@ -755,11 +762,20 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 user.set_password(request.data.get("password"))
                 user.save()
 
+                # 设置 JWT 的 payload 数据
+                payload = {
+                    "user_pk": user.pk,
+                    "username": user.username,
+                    "source": user.path,
+                    "exp": datetime.datetime.utcnow() + settings.JWT_EXPIRATION_DELTA  # 设置过期时间为当前时间的一天后
+                }
+                token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
                 data = {
                     "username": user.username,
                     "user_uid": user.uid,
                     "user_pk": user.pk,
                     "source": user.path,
+                    "token": base64.b64encode(token.encode())
                 }
                 return self.sucUserResponse(data)
             except IntegrityError as exc:
@@ -858,8 +874,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def getList(self, request: Request) -> Response:
         """ Get users """
-        print(settings.API_TOKEN)
-        print(os.environ)
         if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:
             users = User.objects.filter(type='external').values('username')
             user_data = list(users)
