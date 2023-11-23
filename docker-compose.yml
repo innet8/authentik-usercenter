@@ -44,8 +44,8 @@ services:
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ALGORITHM: ${JWT_SECRET_KEY}
-      API_TOKEN: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      API_TOKEN: ${API_TOKEN}
     volumes:
       - ./media:/media
       - ./custom-templates:/templates

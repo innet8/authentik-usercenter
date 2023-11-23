@@ -56,5 +56,7 @@
     "请求错误": "Request error",
     "注册成功": "registration success",
     "登录成功!": "login successful!",
-    "账户已禁用": "Account disabled"
+    "账户已禁用": "Account disabled",
+    "账户必须为邮箱格式": "The account must be in email format",
+    "密码必须为数字英文符号且大于等于6位": "The password must be numbers, English symbols and greater than or equal to 6 characters"
 }

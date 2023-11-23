@@ -56,5 +56,7 @@
     "请求错误": "Erreur de demande",
     "注册成功": "succès de l'inscription",
     "登录成功!": "connexion réussie!",
-    "账户已禁用": "Compte désactivé"
+    "账户已禁用": "Compte désactivé",
+    "账户必须为邮箱格式": "Le compte doit être au format email",
+    "密码必须为数字英文符号且大于等于6位": "Le mot de passe doit être composé de chiffres, de symboles anglais et supérieur ou égal à 6 caractères"
 }
