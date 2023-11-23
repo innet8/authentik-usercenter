@@ -175,7 +175,7 @@ const handleLogin = () => {
                     callback = callback.indexOf("?") == -1 ? callback + "?ak-token=" : callback + "&ak-token="
                     parent.window.location.href = callback + data.token
                 }else{
-                    parent.window.location.href =  window.location.origin + `/page/success?language=${config.value.language}&ak-token=${data.token}`
+                    parent.window.location.href =  parent.window.location.origin + `/page/success?language=${config.value.language}&ak-token=${data.token}`
                 }
             })
             .catch( res => {
@@ -269,7 +269,7 @@ const refreshCode = () => {
     @apply bg-bg-login flex items-center;
 
     .login-body {
-        @apply flex items-center flex-col max-h-full overflow-hidden py-32 w-full;
+        @apply flex items-center flex-col max-h-full overflow-hidden py-5 w-full;
 
         .login-logo {
             @apply block w-84 h-84 bg-logo mb-36;

@@ -7,7 +7,7 @@ export const routes = [
     {
         name: "login",
         path: "/page/login",
-        meta: { title: $t('登陆'), login: false },
+        meta: { title: $t('登录'), login: false },
         component: Login
     },
     {
