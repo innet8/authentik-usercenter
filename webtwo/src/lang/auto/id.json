@@ -58,5 +58,6 @@
     "登录成功!": "login berhasil!",
     "账户已禁用": "Akun dinonaktifkan",
     "账户必须为邮箱格式": "Akun harus dalam format email",
-    "密码必须为数字英文符号且大于等于6位": "Kata sandi harus berupa angka, simbol bahasa Inggris dan lebih dari atau sama dengan 6 karakter"
+    "密码必须为数字英文符号且大于等于6位": "Kata sandi harus berupa angka, simbol bahasa Inggris dan lebih dari atau sama dengan 6 karakter",
+    "密码必须为数字英文符号且最大长度100字符,最少6位": "Password harus berupa angka dan simbol bahasa Inggris dengan panjang maksimal 100 karakter dan minimal 6 karakter."
 }

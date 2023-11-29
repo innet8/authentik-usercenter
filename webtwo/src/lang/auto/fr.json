@@ -58,5 +58,6 @@
     "登录成功!": "connexion réussie!",
     "账户已禁用": "Compte désactivé",
     "账户必须为邮箱格式": "Le compte doit être au format email",
-    "密码必须为数字英文符号且大于等于6位": "Le mot de passe doit être composé de chiffres, de symboles anglais et supérieur ou égal à 6 caractères"
+    "密码必须为数字英文符号且大于等于6位": "Le mot de passe doit être composé de chiffres, de symboles anglais et supérieur ou égal à 6 caractères",
+    "密码必须为数字英文符号且最大长度100字符,最少6位": "Le mot de passe doit être composé de chiffres et de symboles anglais d'une longueur maximale de 100 caractères et d'un minimum de 6 caractères."
 }

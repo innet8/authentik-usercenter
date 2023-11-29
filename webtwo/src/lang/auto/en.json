@@ -58,5 +58,6 @@
     "登录成功!": "login successful!",
     "账户已禁用": "Account disabled",
     "账户必须为邮箱格式": "The account must be in email format",
-    "密码必须为数字英文符号且大于等于6位": "The password must be numbers, English symbols and greater than or equal to 6 characters"
+    "密码必须为数字英文符号且大于等于6位": "The password must be numbers, English symbols and greater than or equal to 6 characters",
+    "密码必须为数字英文符号且最大长度100字符,最少6位": "The password must be numbers and English symbols with a maximum length of 100 characters and a minimum of 6 characters."
 }

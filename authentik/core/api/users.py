@@ -739,18 +739,18 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "账户必须为邮箱格式")
         if 'password' not in request.data:
             return self.errUserResponse("", "密码不能为空")
-        pattern2 = r'^[A-Za-z\d@$!%*,.?\/{}_+\-&\[\]<>;:"\'\\]{6,}$'
+        pattern2 = r'^[A-Za-z\d@$!%*,.?\/{}_+\-&\[\]<>;:"\'\\]{6,100}$'
         if not re.match(pattern2, request.data.get("password")):
-            return self.errUserResponse("", "密码必须为数字英文符号且大于等于6位")
+            return self.errUserResponse("", "密码必须为数字英文符号且最大长度100字符,最少6位")
         if 'source' not in request.data:
             return self.errUserResponse("", "来源不能为空")
-        
+
         username = request.data.get("username")
         source = request.data.get("source")
-        
+
         if User.objects.filter(username=request.data.get("username")).exists():
             return self.errUserResponse("", "账户已存在")
-        
+
         with atomic():
             try:
                 user: User = User.objects.create(
@@ -835,7 +835,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "账户密码错误")
         except IntegrityError as exc:
             return self.errUserResponse("", str(exc))
-        
+
     @extend_schema(
         request=inline_serializer(
             "UserServiceAccountSerializer",
@@ -859,7 +859,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """ Decode token to getUser"""
         if 'token' not in request.data:
             return self.errUserResponse("", "令牌不能为空")
-    
+
         try:
             token = base64.b64decode(request.data.get("token")).decode()
             decoded_payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=settings.JWT_ALGORITHM)
@@ -881,12 +881,12 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         else:
             return self.errUserResponse("", "INVALID TOKENk")
 
-        
+
 
     def sucUserResponse(self, data="", msg="请求成功", code=1, status=200):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
-    
+
     def errUserResponse(self, data="", msg="请求错误", code=0, status=400):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
