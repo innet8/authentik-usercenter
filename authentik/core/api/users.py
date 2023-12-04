@@ -887,6 +887,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
 
-    def errUserResponse(self, data="", msg="请求错误", code=0, status=400):
+    def errUserResponse(self, data="", msg="请求成功", code=0, status=200):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
