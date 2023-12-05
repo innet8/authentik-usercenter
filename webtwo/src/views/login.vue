@@ -192,31 +192,30 @@ const handleLogin = () => {
 // 注册
 const handleReg = () => {
     let callback = config.value.callback;
-    // formRef.value?.validate((errors) => {
-    //     if (errors) {
-    //         console.log(errors)
-    //         return
-    //     }
-    //     loadIng.value = true
-    //     userReg({
-    //         username: formData.value.email,
-    //         password: formData.value.password,
-    //         source: (config.value.source + '') || 'sys-web',
-    //     }).then(({ data,msg }) => {
-    //         message.success( $t("注册成功") )
-    //         if(callback){
-    //             callback = callback.indexOf("?") == -1 ? callback + "?ak-token=" : callback + "&ak-token="
-    //             parent.window.location.href = callback + (data.token || "")
-    //         }else{
-    //             loginType.value = "login"
-    //         }
-    //     })
-    //     .catch( res => {
-    //         message.error( $t(res.msg) )
-    //     }).finally(() => {
-    //         loadIng.value = false
-    //     })
-    // }).catch( _ => {})
+    formRef.value?.validate((errors) => {
+        if (errors) {
+            return
+        }
+        loadIng.value = true
+        userReg({
+            username: formData.value.email,
+            password: formData.value.password,
+            source: (config.value.source + '') || 'sys-web',
+        }).then(({ data,msg }) => {
+            message.success( $t("注册成功") )
+            if(callback){
+                callback = callback.indexOf("?") == -1 ? callback + "?ak-token=" : callback + "&ak-token="
+                parent.window.location.href = callback + (data.token || "")
+            }else{
+                loginType.value = "login"
+            }
+        })
+        .catch( res => {
+            message.error( $t(res.msg) )
+        }).finally(() => {
+            loadIng.value = false
+        })
+    }).catch( _ => {})
 }
 
 // 变更登录类型
