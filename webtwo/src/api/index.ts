@@ -119,9 +119,9 @@ export function ResultDialog({code, msg, data}, dialogOptions = {}) {
         options = Object.assign(options, dialogOptions)
     }
     // const clobalStore = GlobalStore()
-    if (code === CODE.StatusOK) {
-        return window.$message.success(content)
-    } else {
-        return window.$message.error(content)
-    }
+    // if (code === CODE.StatusOK) {
+    //     return window.$message.success(content)
+    // } else {
+    //     return window.$message.error(content)
+    // }
 }

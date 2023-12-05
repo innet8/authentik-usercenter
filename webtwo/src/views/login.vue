@@ -179,7 +179,7 @@ const handleLogin = () => {
                 }
             })
             .catch( res => {
-                message.error( $t(res.data.response.data.msg) )
+                message.error( $t(res.msg) )
                 if (res.data.code == "need") {
                     onBlur()
                 }
@@ -217,7 +217,7 @@ const handleReg = () => {
                 }
             })
             .catch( res => {
-                message.error( $t(res.data.response.data.msg) )
+                message.error( $t(res.msg) )
             }).finally(() => {
                 loadIng.value = false
             })
