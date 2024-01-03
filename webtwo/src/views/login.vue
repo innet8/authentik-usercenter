@@ -12,14 +12,14 @@
                     <n-form ref="formRef" :rules="rules" label-placement="left" :model="formData">
                         <div v-if="loginMode == 'access'" class="login-access">
                             <n-form-item label="" path="email">
-                                <n-input v-model:value="formData.email" @blur="onBlur" :placeholder="$t('输入您的邮箱')" clearable size="large">
+                                <n-input v-model:value="formData.email" @blur="onBlur" :placeholder="$t('请输入用户账号')" clearable size="large">
                                     <template #prefix>
                                         <n-icon :component="MailOutline" />
                                     </template>
                                 </n-input>
                             </n-form-item>
                             <n-form-item label="" path="password">
-                                <n-input type="password" v-model:value="formData.password" @blur="onBlur" :placeholder="$t('设置您的密码')" clearable
+                                <n-input type="password" v-model:value="formData.password" @blur="onBlur" :placeholder="$t('请输入登录密码')" clearable
                                     size="large">
                                     <template #prefix>
                                         <n-icon :component="LockClosedOutline" />
@@ -126,7 +126,7 @@ const rules = ref({
         required: true,
         validator (rule: FormItemRule, value: string) {
             if (!value) {
-                return new Error($t('请输入您的账号'))
+                return new Error($t('请输入账号'))
             }
             // else if (!utils.isEmail(value)) {
             //     return new Error($t('请输入正确的邮箱'))
@@ -137,14 +137,14 @@ const rules = ref({
     },
     password: {
         required: true,
-        message: $t('输入您的密码'),
+        message: $t('请输入密码'),
         trigger: ['input','blur']
     },
     confirmPassword: {
         required: true,
         validator (rule: FormItemRule, value: string) {
             if (!value) {
-              return new Error($t('请再次确认密码'))
+              return new Error($t('请输入确认密码'))
             }else if (value != formData.value.password) {
               return new Error($t('两次密码输入不一致'))
             }
