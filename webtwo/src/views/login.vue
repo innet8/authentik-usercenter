@@ -5,21 +5,21 @@
                 <h2 class="login-title">
                     <span>{{ config.title || ( loginType == 'reg' ? $t("注册") : $t("登录")) }}</span>
                 </h2>
-                <p class="login-subtitle">
+                <!-- <p class="login-subtitle">
                     {{ config.subtitle || loginType == 'reg' ? $t("输入您的信息以创建帐户") : $t("输入您的凭证以访问您的帐户") }}
-                </p>
+                </p> -->
                 <transition name="login-mode">
                     <n-form ref="formRef" :rules="rules" label-placement="left" :model="formData">
                         <div v-if="loginMode == 'access'" class="login-access">
                             <n-form-item label="" path="email">
-                                <n-input v-model:value="formData.email" @blur="onBlur" :placeholder="$t('输入您的账号')" clearable size="large">
+                                <n-input v-model:value="formData.email" @blur="onBlur" :placeholder="$t('输入您的邮箱')" clearable size="large">
                                     <template #prefix>
                                         <n-icon :component="MailOutline" />
                                     </template>
                                 </n-input>
                             </n-form-item>
                             <n-form-item label="" path="password">
-                                <n-input type="password" v-model:value="formData.password" @blur="onBlur" :placeholder="$t('输入您的密码')" clearable
+                                <n-input type="password" v-model:value="formData.password" @blur="onBlur" :placeholder="$t('设置您的密码')" clearable
                                     size="large">
                                     <template #prefix>
                                         <n-icon :component="LockClosedOutline" />
@@ -55,12 +55,12 @@
                             <n-button v-else type="primary" :loading="loadIng" @click="handleReg">{{ $t("注册") }}</n-button>
                             <div class="login-switch" v-if="config.switch !== 'false'">
                                 <template v-if="loginType == 'login'">
-                                    {{ $t("还没有帐号？") }}
-                                    <a href="javascript:void(0)" @click="changeLoginType"> {{ $t("注册帐号") }}</a>
+                                    {{ $t("还没有账号？") }}
+                                    <a href="javascript:void(0)" @click="changeLoginType"> {{ $t("注册账号") }}</a>
                                 </template>
                                 <template v-else>
-                                    {{ $t("已经有帐号？") }}
-                                    <a href="javascript:void(0)" @click="changeLoginType"> {{ $t("登录帐号") }}</a>
+                                    {{ $t("已经有账号？") }}
+                                    <a href="javascript:void(0)" @click="changeLoginType"> {{ $t("登录账号") }}</a>
                                 </template>
                             </div>
                         </div>
