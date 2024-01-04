@@ -742,6 +742,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """用户注册"""
         if "username" not in request.data:
             return self.errUserResponse("", "账号不能为空")
+        if cache.get("EmailLock::" + request.data.get("username")):
+            return self.errUserResponse("", "请勿频繁操作，120s后再重新提交请求")
         pattern1 = r'^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$'
         if not re.match(pattern1, request.data.get("username")):
             return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
@@ -763,7 +765,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         with atomic():
             try:
-                oldUser = User.objects.filter(username=request.data.get("username")).first()
+                oldUser = User.objects.filter(username=request.data.get("username"), is_verify_email=True).first()
                 if oldUser:
                     oldUser.delete()
                 user: User = User.objects.create(
@@ -981,27 +983,17 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         username = cache.get(code)
         if not username:
             return self.errUserResponse("", "链接已失效，请重新注册")
-        user = User.objects.filter(username=username, is_verify_email=False).first()
+        user = User.objects.filter(username=username).first()
         if user:
             user.is_verify_email = True
             user.save()
-            # 设置 JWT 的 payload 数据
-            payload = {
-                "user_pk": user.pk,
-                "username": user.username,
-                "source": user.path,
-                "exp": datetime.datetime.utcnow()
-                + settings.JWT_EXPIRATION_DELTA,  # 设置过期时间为当前时间的一天后
-            }
-            token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-            encodeToken = base64.b64encode(token.encode())
             return redirect(CONFIG.get("app_url") + "page/login")
         else:
             return self.errUserResponse("", "用户不存在")
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
-    def sendRegisterEmailCode(self, request: Request) -> Response:
-        """发送注册邮件验证码"""
+    def sendRegisterVerifyEmail(self, request: Request) -> Response:
+        """发送注册验证邮件"""
         if "username" not in request.data:
             return self.errUserResponse("", "账号不能为空")
         pattern1 = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
@@ -1010,26 +1002,37 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         username = request.data.get("username")
         if cache.get("EmailLock::" + username):
             return self.errUserResponse("", "请勿频繁操作，120s后再重新提交请求")
-        if User.objects.filter(username=request.data.get("username")).exists():
-            return self.errUserResponse("", "账号已存在")
+        user = User.objects.filter(username=request.data.get("username")).first()
+        if not user:
+            return self.errUserResponse("", "用户不存在，请前往注册")
+        if user.is_verify_email == True:
+            return self.errUserResponse("", "邮箱已验证，请直接登录")
         # 生成6位数字验证码
         email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
-        cache.set(username, email_code, 600)
-        try:
-            result = mail.send_mail(
-                subject="邮箱验证",  # 题目
-                message=email_code,  # 消息内容
-                from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
-                recipient_list=[username],  # 接收者邮件列表
-            )
-            LOGGER.info(result)
-            if result == 1:
-                cache.set("EmailLock::" + username, 1, 10)
-                return self.sucUserResponse("", "邮件发送成功")
-            else:
-                return self.errUserResponse("", "邮件发送失败")
-        except Exception as e:
-            return self.errUserResponse("", f"邮件发送出现异常: {str(e)}")
+        hash_object = hashlib.md5(email_code.encode())
+        md5_hash = hash_object.hexdigest()
+        cache.set(md5_hash, username, 600)
+
+        verification_link = (
+            CONFIG.get("app_url")
+            + "/api/v3/core/users/sendRegisterEmailCode/?code="
+            + md5_hash,
+        )  # 消息内容
+        result = mail.send_mail(
+            subject="邮箱验证",  # 题目
+            message="注册验证",
+            from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
+            recipient_list=[username],  # 接收者邮件列表
+            html_message=render_to_string(
+                "email/verify_email.html",
+                {"username": username, "verification_link": verification_link},
+            ),
+        )
+        if result == 1:
+            cache.set("EmailLock::" + username, 1, 120)
+            return self.sucUserResponse("", "邮件发送成功")
+        else:
+            return self.errUserResponse("", "邮件发送失败")
 
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def testGetCache(self, request: Request) -> Response:
