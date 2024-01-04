@@ -740,6 +740,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def register(self, request: Request) -> Response:
         """用户注册"""
+        if  self.limitRequest(request):
+            return self.errUserResponse("", "请勿频繁操作")
         if "username" not in request.data:
             return self.errUserResponse("", "账号不能为空")
         if cache.get("EmailLock::" + request.data.get("username")):
@@ -765,7 +767,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         with atomic():
             try:
-                oldUser = User.objects.filter(username=request.data.get("username"), is_verify_email=True).first()
+                oldUser = User.objects.filter(username=request.data.get("username"), is_verify_email=False).first()
                 if oldUser:
                     oldUser.delete()
                 user: User = User.objects.create(
@@ -830,6 +832,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def login(self, request: Request) -> Response:
         """用户登录"""
+        if  self.limitRequest(request):
+            return self.errUserResponse("", "请勿频繁操作")
         if "username" not in request.data:
             return self.errUserResponse("", "账号不能为空")
         if "password" not in request.data:
@@ -841,8 +845,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return self.errUserResponse("", "请输入图形验证码")
             verify_key = f'verify_pic_code_{request.data.get("username")}'
             verify_pic_code = cache.get(verify_key, '')
-            LOGGER.info(verify_key)
-            LOGGER.info(verify_pic_code)
             if verify_pic_code != request.data.get("pic_code"):
                 return self.errUserResponse("", "图形验证码错误")
 
@@ -1160,3 +1162,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def errUserResponse(self, data="", msg="请求成功", code=0, status=200):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
+
+    def limitRequest(self, request: Request):
+        ip = request.META['HTTP_X_FORWARDED_FOR']
+        rq_num = cache.get(ip, 0)
+        cache.set(ip, rq_num + 1)
+        if rq_num > 60:
+            return True
+        return False
