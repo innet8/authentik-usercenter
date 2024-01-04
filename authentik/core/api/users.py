@@ -741,15 +741,15 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def register(self, request: Request) -> Response:
         """用户注册"""
         if "username" not in request.data:
-            return self.errUserResponse("", "账户不能为空")
-        pattern1 = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
+            return self.errUserResponse("", "账号不能为空")
+        pattern1 = r'^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$'
         if not re.match(pattern1, request.data.get("username")):
-            return self.errUserResponse("", "账户必须为邮箱格式")
+            return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
         if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
-        pattern2 = r'^[A-Za-z\d@$!%*,.?\/{}_+\-&\[\]<>;:"\'\\]{6,100}$'
+        pattern2 = r'^(?:(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])|(?=.*[A-Z])(?=.*[a-z])(?=.*[^A-Za-z0-9\s])|(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])|(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])).{6,24}$'
         if not re.match(pattern2, request.data.get("password")):
-            return self.errUserResponse("", "密码必须为数字英文符号且最大长度100字符,最少6位")
+            return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
         if "source" not in request.data:
             return self.errUserResponse("", "来源不能为空")
 
@@ -759,7 +759,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if User.objects.filter(
             username=request.data.get("username"), is_verify_email=True
         ).exists():
-            return self.errUserResponse("", "账户已存在")
+            return self.errUserResponse("", "账号已存在")
 
         with atomic():
             try:
@@ -829,14 +829,16 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def login(self, request: Request) -> Response:
         """用户登录"""
         if "username" not in request.data:
-            return self.errUserResponse("", "账户不能为空")
+            return self.errUserResponse("", "账号不能为空")
         if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
 
         try:
             user = User.objects.get(username=request.data.get("username"))
+            if not user:
+                return self.errUserResponse("", "账号不存在")
             if not user.is_active:
-                return self.errUserResponse("", "账户已禁用")
+                return self.errUserResponse("", "账号已禁用")
             if user.type != UserTypes.EXTERNAL:
                 return self.errUserResponse("", "禁止登录")
             if user.is_verify_email == False:
@@ -857,9 +859,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 data = {"token": base64.b64encode(token.encode())}
                 return self.sucUserResponse(data)
             else:
-                return self.errUserResponse("", "账户密码错误")
+                return self.errUserResponse("", "账号或密码错误")
         except User.DoesNotExist:
-            return self.errUserResponse("", "账户密码错误")
+            return self.errUserResponse("", "账号或密码错误")
         except IntegrityError as exc:
             return self.errUserResponse("", str(exc))
 
@@ -884,15 +886,15 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def reset_password(self, request: Request) -> Response:
         """重置密码"""
-        # 获取请求中的用户名和密码信息
+        # 获取请求中的账号和密码信息
         username = request.data.get("username")
         old_password = request.data.get("old_password")
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
 
-        # 验证用户名和密码是否存在
+        # 验证账号和密码是否存在
         if not username:
-            return self.errUserResponse("", "用户名不能为空")
+            return self.errUserResponse("", "账号不能为空")
         if not old_password:
             return self.errUserResponse("", "旧密码不能为空")
         if not new_password:
@@ -903,7 +905,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
-            return self.errUserResponse("", "用户不存在")
+            return self.errUserResponse("", "账号不存在")
 
         if not user.check_password(old_password):
             return self.errUserResponse("", "旧密码不正确")
@@ -914,7 +916,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         # 验证新密码是否符合规则
         pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9])|(?=.*[A-Z])(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
         if not re.match(pattern, new_password):
-            return self.errUserResponse("", "密码必须为6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
+            return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
 
         user.set_password(new_password)
         user.save()
@@ -954,7 +956,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """更改用户邮箱验证状态"""
         if "HTTP_APITOKEN" in request.META and request.META["HTTP_APITOKEN"] == settings.API_TOKEN:
             if "username" not in request.data:
-                return self.errUserResponse("", "账户不能为空")
+                return self.errUserResponse("", "账号不能为空")
             if "is_verify_email" not in request.data:
                 return self.errUserResponse("", "验证状态不能为空")
 
@@ -1001,15 +1003,15 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def sendRegisterEmailCode(self, request: Request) -> Response:
         """发送注册邮件验证码"""
         if "username" not in request.data:
-            return self.errUserResponse("", "账户不能为空")
+            return self.errUserResponse("", "账号不能为空")
         pattern1 = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
         if not re.match(pattern1, request.data.get("username")):
-            return self.errUserResponse("", "账户必须为邮箱格式")
+            return self.errUserResponse("", "账号必须为邮箱格式")
         username = request.data.get("username")
         if cache.get("EmailLock::" + username):
             return self.errUserResponse("", "请勿频繁操作，120s后再重新提交请求")
         if User.objects.filter(username=request.data.get("username")).exists():
-            return self.errUserResponse("", "账户已存在")
+            return self.errUserResponse("", "账号已存在")
         # 生成6位数字验证码
         email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
         cache.set(username, email_code, 600)
