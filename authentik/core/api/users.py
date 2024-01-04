@@ -13,6 +13,7 @@ from typing import Any, Optional
 import jwt
 from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sessions.backends.cache import KEY_PREFIX
 from django.core import mail
 from django.core.cache import cache
@@ -740,13 +741,13 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def register(self, request: Request) -> Response:
         """用户注册"""
-        if  self.limitRequest(request):
+        if self.limitRequest(request):
             return self.errUserResponse("", "请勿频繁操作")
         if "username" not in request.data:
             return self.errUserResponse("", "账号不能为空")
         if cache.get("EmailLock::" + request.data.get("username")):
             return self.errUserResponse("", "请勿频繁操作，120s后再重新提交请求")
-        pattern1 = r'^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$'
+        pattern1 = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
         if not re.match(pattern1, request.data.get("username")):
             return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
         if "password" not in request.data:
@@ -767,7 +768,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         with atomic():
             try:
-                oldUser = User.objects.filter(username=request.data.get("username"), is_verify_email=False).first()
+                oldUser = User.objects.filter(
+                    username=request.data.get("username"), is_verify_email=False
+                ).first()
                 if oldUser:
                     oldUser.delete()
                 user: User = User.objects.create(
@@ -788,7 +791,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 verification_link = (
                     CONFIG.get("app_url")
                     + "/api/v3/core/users/sendRegisterEmailCode/?code="
-                    + md5_hash,
+                    + md5_hash
                 )  # 消息内容
                 result = mail.send_mail(
                     subject="邮箱验证",  # 题目
@@ -832,7 +835,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def login(self, request: Request) -> Response:
         """用户登录"""
-        if  self.limitRequest(request):
+        if self.limitRequest(request):
             return self.errUserResponse("", "请勿频繁操作")
         if "username" not in request.data:
             return self.errUserResponse("", "账号不能为空")
@@ -844,7 +847,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             if "pic_code" not in request.data:
                 return self.errUserResponse("", "请输入图形验证码")
             verify_key = f'verify_pic_code_{request.data.get("username")}'
-            verify_pic_code = cache.get(verify_key, '')
+            verify_pic_code = cache.get(verify_key, "")
+            LOGGER.info(verify_key)
+            LOGGER.info(verify_pic_code)
             if verify_pic_code != request.data.get("pic_code"):
                 return self.errUserResponse("", "图形验证码错误")
 
@@ -926,10 +931,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "新密码和确认密码不匹配")
 
         try:
+            token = base64.b64decode(token).decode()
             decoded_payload = jwt.decode(
                 token, settings.JWT_SECRET_KEY, algorithms=settings.JWT_ALGORITHM
             )
-            username = decoded_payload.get('username')
+            username = decoded_payload.get("username")
             user = User.objects.get(username=username)
         except jwt.ExpiredSignatureError:
             return self.errUserResponse("", "令牌已过期")
@@ -940,7 +946,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         user.set_password(new_password)
         user.save()
-        return self.sucUserResponse("更新密码成功")
+        return self.sucUserResponse("", "更新密码成功")
+
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def reset_password(self, request: Request) -> Response:
         """重置密码"""
@@ -973,7 +980,71 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         user.set_password(new_password)
         user.save()
-        return self.sucUserResponse("密码已成功重置")
+        return self.sucUserResponse("", "密码已成功重置")
+
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def retrieve_password(self, request: Request) -> Response:
+        """找回密码"""
+        username = request.data.get("username")
+
+        if not username:
+            return self.errUserResponse("", "账号不能为空")
+        if cache.get("EmailLock::" + username):
+            return self.errUserResponse("", "请勿频繁操作，120s后再重新提交请求")
+        pattern = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
+        if not re.match(pattern, username):
+            return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return self.errUserResponse("", "账号不存在")
+
+        token = str(default_token_generator.make_token(user))
+        hash_object = hashlib.md5(token.encode())
+        md5_hash = hash_object.hexdigest()
+        cache.set(md5_hash, username, 600)
+        retrieve_password_link = (
+            CONFIG.get("app_url") + "/api/v3/core/users/verify_retrieve_password/?code=" + md5_hash
+        )
+
+        mail_subject = "重置你的密码"
+        html_message = render_to_string(
+            "email/retrieve_password_email.html",
+            {
+                "retrieve_password_link": retrieve_password_link,
+                "language": user.locale(request),
+            },
+        )
+        # mail.send_mail(mail_subject, html_message=html_message, settings.DEFAULT_FROM_EMAIL, [username])
+
+        result = mail.send_mail(
+            subject=mail_subject,  # 题目
+            message=mail_subject,
+            from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
+            recipient_list=[username],  # 接收者邮件列表
+            html_message=html_message,
+        )
+        if result == 1:
+            return self.sucUserResponse("", "邮件下发成功，请前往邮箱进行重置密码")
+        else:
+            return self.errUserResponse("", "邮件发送失败")
+
+    @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
+    def verify_retrieve_password(self, request: Request) -> Response:
+        """验证注册邮箱"""
+        code = request.query_params.get("code")
+        if not code:
+            return self.errUserResponse("", "code不能为空")
+        username = cache.get(code)
+        if not username:
+            return self.errUserResponse("", "链接已失效，请重新提交请求")
+        user = User.objects.filter(username=username).first()
+        if user:
+            cache.delete(code)
+            return redirect(CONFIG.get("app_url") + "page/resetPassword")
+        else:
+            return self.errUserResponse("", "用户不存在")
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def getInfo(self, request: Request) -> Response:
@@ -1065,9 +1136,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         cache.set(md5_hash, username, 600)
 
         verification_link = (
-            CONFIG.get("app_url")
-            + "/api/v3/core/users/sendRegisterEmailCode/?code="
-            + md5_hash,
+            CONFIG.get("app_url") + "/api/v3/core/users/sendRegisterEmailCode/?code=" + md5_hash
         )  # 消息内容
         result = mail.send_mail(
             subject="邮箱验证",  # 题目
@@ -1090,6 +1159,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """图形验证码"""
         username = request.query_params.get("username")
         LOGGER.info(username)
+
         def check_code(width=120, height=30, char_length=5, font_file="Monaco.ttf", font_size=28):
             code = []
             img = Image.new(mode="RGB", size=(width, height), color=(255, 255, 255))
@@ -1143,7 +1213,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         # 调用poillow函数，生成图片
         img, code_string = check_code()
         print(code_string)
-        verify_key = f'verify_pic_code_{username}'
+        verify_key = f"verify_pic_code_{username}"
         cache.set(verify_key, code_string, 600)
         # 创建内存中的文件
         stream = BytesIO()
@@ -1164,7 +1234,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         return Response(response, status=status)
 
     def limitRequest(self, request: Request):
-        ip = request.META['HTTP_X_FORWARDED_FOR']
+        ip = request.META["HTTP_X_FORWARDED_FOR"]
         rq_num = cache.get(ip, 0)
         cache.set(ip, rq_num + 1)
         if rq_num > 60:
