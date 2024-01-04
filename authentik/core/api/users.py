@@ -1016,8 +1016,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 "language": user.locale(request),
             },
         )
-        # mail.send_mail(mail_subject, html_message=html_message, settings.DEFAULT_FROM_EMAIL, [username])
-
         result = mail.send_mail(
             subject=mail_subject,  # 题目
             message=mail_subject,
