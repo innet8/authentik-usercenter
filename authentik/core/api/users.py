@@ -951,11 +951,12 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def reset_password(self, request: Request) -> Response:
         """重置密码"""
-        username = request.data.get("username")
+        code = request.data.get("code")
         new_password = request.data.get("new_password")
+        username = cache.get(code)
 
         if not username:
-            return self.errUserResponse("", "账号不能为空")
+            return self.errUserResponse("", "链接已失效，请重新提交请求")
         if not new_password:
             return self.errUserResponse("", "新密码不能为空")
         pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
@@ -969,6 +970,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         user.set_password(new_password)
         user.save()
+        cache.delete(code)
         return self.sucUserResponse("", "密码已成功重置")
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
@@ -1028,8 +1030,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "链接已失效，请重新提交请求")
         user = User.objects.filter(username=username).first()
         if user:
-            cache.delete(code)
-            return redirect(CONFIG.get("app_url") + "page/resetPassword?username=" + username)
+            return redirect(CONFIG.get("app_url") + "page/resetPassword?code=" + code)
         else:
             return self.errUserResponse("", "用户不存在")
 
