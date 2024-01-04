@@ -1,34 +1,32 @@
 """User API Views"""
-from datetime import timedelta
-from json import loads
-from typing import Any, Optional
-import jwt
-import hashlib
 import base64
 import datetime
+import hashlib
 import os
-import re
 import random
+import re
+from datetime import timedelta
 from io import BytesIO
+from json import loads
+from typing import Any, Optional
 
+import jwt
 from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.sessions.backends.cache import KEY_PREFIX
+from django.core import mail
 from django.core.cache import cache
 from django.db.models.functions import ExtractHour
 from django.db.transaction import atomic
 from django.db.utils import IntegrityError
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import redirect
+from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils.http import urlencode
 from django.utils.text import slugify
 from django.utils.timezone import now
 from django.utils.translation import gettext as _
-from django.core import mail
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import redirect
-from django.template.loader import render_to_string
-from PIL import ImageFilter, ImageDraw, Image, ImageFont
-
 from django_filters.filters import (
     BooleanFilter,
     CharFilter,
@@ -46,6 +44,7 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from guardian.shortcuts import get_anonymous_user, get_objects_for_user
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from rest_framework.decorators import action
 from rest_framework.fields import (
     CharField,
@@ -54,6 +53,7 @@ from rest_framework.fields import (
     ListField,
     SerializerMethodField,
 )
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import (
@@ -66,7 +66,6 @@ from rest_framework.serializers import (
 )
 from rest_framework.validators import UniqueValidator
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import AllowAny
 from structlog.stdlib import get_logger
 
 from authentik.admin.api.metrics import CoordinateSerializer
@@ -719,45 +718,47 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         return response
 
     @extend_schema(
-            request=inline_serializer(
-                "UserServiceAccountSerializer",
+        request=inline_serializer(
+            "UserServiceAccountSerializer",
+            {
+                "username": CharField(required=True),
+                "password": CharField(required=True),
+            },
+        ),
+        responses={
+            200: inline_serializer(
+                "UserServiceAccountResponse",
                 {
                     "username": CharField(required=True),
-                    "password": CharField(required=True),
+                    "user_uid": CharField(required=True),
+                    "user_pk": IntegerField(required=True),
+                    "group_pk": CharField(required=False),
                 },
-            ),
-            responses={
-                200: inline_serializer(
-                    "UserServiceAccountResponse",
-                    {
-                        "username": CharField(required=True),
-                        "user_uid": CharField(required=True),
-                        "user_pk": IntegerField(required=True),
-                        "group_pk": CharField(required=False),
-                    },
-                )
-            },
-        )
+            )
+        },
+    )
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def register(self, request: Request) -> Response:
         """用户注册"""
-        if 'username' not in request.data:
+        if "username" not in request.data:
             return self.errUserResponse("", "账户不能为空")
-        pattern1 = r'^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$'
+        pattern1 = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
         if not re.match(pattern1, request.data.get("username")):
             return self.errUserResponse("", "账户必须为邮箱格式")
-        if 'password' not in request.data:
+        if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
         pattern2 = r'^[A-Za-z\d@$!%*,.?\/{}_+\-&\[\]<>;:"\'\\]{6,100}$'
         if not re.match(pattern2, request.data.get("password")):
             return self.errUserResponse("", "密码必须为数字英文符号且最大长度100字符,最少6位")
-        if 'source' not in request.data:
+        if "source" not in request.data:
             return self.errUserResponse("", "来源不能为空")
 
         username = request.data.get("username")
         source = request.data.get("source")
 
-        if User.objects.filter(username=request.data.get("username"), is_verify_email=True).exists():
+        if User.objects.filter(
+            username=request.data.get("username"), is_verify_email=True
+        ).exists():
             return self.errUserResponse("", "账户已存在")
 
         with atomic():
@@ -775,18 +776,25 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 user.set_password(request.data.get("password"))
                 user.save()
                 # 生成6位数字验证码
-                email_code = ''.join(str(random.randint(0, 9)) for _ in range(6))
+                email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
                 hash_object = hashlib.md5(email_code.encode())
                 md5_hash = hash_object.hexdigest()
                 cache.set(md5_hash, username, 600)
 
-                verification_link=CONFIG.get("app_url") + '/api/v3/core/users/sendRegisterEmailCode/?code=' + md5_hash,  # 消息内容
+                verification_link = (
+                    CONFIG.get("app_url")
+                    + "/api/v3/core/users/sendRegisterEmailCode/?code="
+                    + md5_hash,
+                )  # 消息内容
                 result = mail.send_mail(
-                    subject='邮箱验证',  # 题目    
-                    message = '注册验证',
+                    subject="邮箱验证",  # 题目
+                    message="注册验证",
                     from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
                     recipient_list=[username],  # 接收者邮件列表
-                    html_message=render_to_string('email/verify_email.html', {'username': username, 'verification_link': verification_link})
+                    html_message=render_to_string(
+                        "email/verify_email.html",
+                        {"username": username, "verification_link": verification_link},
+                    ),
                 )
                 if result == 1:
                     return self.sucUserResponse("", "邮件发送成功")
@@ -819,10 +827,10 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     )
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def login(self, request: Request) -> Response:
-        """ 用户登录 """
-        if 'username' not in request.data:
+        """用户登录"""
+        if "username" not in request.data:
             return self.errUserResponse("", "账户不能为空")
-        if 'password' not in request.data:
+        if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
 
         try:
@@ -834,20 +842,21 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             if user.is_verify_email == False:
                 return self.errUserResponse("", "邮箱未验证")
             re = user.check_password(request.data.get("password"))
-            if re :
+            if re:
                 # 设置 JWT 的 payload 数据
                 payload = {
                     "user_pk": user.pk,
                     "username": user.username,
                     "source": user.path,
-                    "exp": datetime.datetime.utcnow() + settings.JWT_EXPIRATION_DELTA  # 设置过期时间为当前时间的一天后
+                    "exp": datetime.datetime.utcnow()
+                    + settings.JWT_EXPIRATION_DELTA,  # 设置过期时间为当前时间的一天后
                 }
-                token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-                data = {
-                    "token": base64.b64encode(token.encode())
-                }
+                token = jwt.encode(
+                    payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+                )
+                data = {"token": base64.b64encode(token.encode())}
                 return self.sucUserResponse(data)
-            else :
+            else:
                 return self.errUserResponse("", "账户密码错误")
         except User.DoesNotExist:
             return self.errUserResponse("", "账户密码错误")
@@ -873,14 +882,55 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         },
     )
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def reset_password(self, request: Request) -> Response:
+        """重置密码"""
+        # 获取请求中的用户名和密码信息
+        username = request.data.get("username")
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        # 验证用户名和密码是否存在
+        if not username:
+            return self.errUserResponse("", "用户名不能为空")
+        if not old_password:
+            return self.errUserResponse("", "旧密码不能为空")
+        if not new_password:
+            return self.errUserResponse("", "新密码不能为空")
+        if not confirm_password:
+            return self.errUserResponse("", "确认密码不能为空")
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return self.errUserResponse("", "用户不存在")
+
+        if not user.check_password(old_password):
+            return self.errUserResponse("", "旧密码不正确")
+
+        if new_password != confirm_password:
+            return self.errUserResponse("", "新密码和确认密码不匹配")
+
+        # 验证新密码是否符合规则
+        pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9])|(?=.*[A-Z])(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
+        if not re.match(pattern, new_password):
+            return self.errUserResponse("", "密码必须为6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
+
+        user.set_password(new_password)
+        user.save()
+        return self.sucUserResponse("密码已成功重置")
+
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def getInfo(self, request: Request) -> Response:
-        """ Decode token to getUser"""
-        if 'token' not in request.data:
+        """Decode token to getUser"""
+        if "token" not in request.data:
             return self.errUserResponse("", "令牌不能为空")
 
         try:
             token = base64.b64decode(request.data.get("token")).decode()
-            decoded_payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=settings.JWT_ALGORITHM)
+            decoded_payload = jwt.decode(
+                token, settings.JWT_SECRET_KEY, algorithms=settings.JWT_ALGORITHM
+            )
         except UnicodeDecodeError:
             return self.errUserResponse("", "无效令牌")
         except jwt.ExpiredSignatureError:
@@ -891,37 +941,39 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def getList(self, request: Request) -> Response:
-        """ 获取用户列表 """
-        if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:
-            users = User.objects.filter(type='external').values('username')
+        """获取用户列表"""
+        if "HTTP_APITOKEN" in request.META and request.META["HTTP_APITOKEN"] == settings.API_TOKEN:
+            users = User.objects.filter(type="external").values("username")
             user_data = list(users)
             return self.sucUserResponse(user_data)
         else:
             return self.errUserResponse("", "INVALID TOKENk")
-    
+
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def updateEmailVerify(self, request: Request) -> Response:
-        """ 更改用户邮箱验证状态 """
-        if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:
-            if 'username' not in request.data:
+        """更改用户邮箱验证状态"""
+        if "HTTP_APITOKEN" in request.META and request.META["HTTP_APITOKEN"] == settings.API_TOKEN:
+            if "username" not in request.data:
                 return self.errUserResponse("", "账户不能为空")
-            if 'is_verify_email' not in request.data:
+            if "is_verify_email" not in request.data:
                 return self.errUserResponse("", "验证状态不能为空")
 
-            user = User.objects.filter(username=request.data.get("username"), type='external').first()
+            user = User.objects.filter(
+                username=request.data.get("username"), type="external"
+            ).first()
             if user:
-                user.is_verify_email =  True if request.data.get("is_verify_email") == 1 else False
+                user.is_verify_email = True if request.data.get("is_verify_email") == 1 else False
                 user.save()
                 return self.sucUserResponse("", "修改成功")
             else:
                 return self.errUserResponse("", "用户不存在")
         else:
             return self.errUserResponse("", "INVALID TOKENk")
-        
+
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def verifyRegisterEmail(self, request: Request) -> Response:
-        """ 验证注册邮箱 """
-        code = request.query_params.get('code')
+        """验证注册邮箱"""
+        code = request.query_params.get("code")
         if not code:
             return self.errUserResponse("", "code不能为空")
         username = cache.get(code)
@@ -936,7 +988,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 "user_pk": user.pk,
                 "username": user.username,
                 "source": user.path,
-                "exp": datetime.datetime.utcnow() + settings.JWT_EXPIRATION_DELTA  # 设置过期时间为当前时间的一天后
+                "exp": datetime.datetime.utcnow()
+                + settings.JWT_EXPIRATION_DELTA,  # 设置过期时间为当前时间的一天后
             }
             token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
             encodeToken = base64.b64encode(token.encode())
@@ -944,57 +997,56 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         else:
             return self.errUserResponse("", "用户不存在")
 
-
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def sendRegisterEmailCode(self, request: Request) -> Response:
-        """ 发送注册邮件验证码 """
-        if 'username' not in request.data:
+        """发送注册邮件验证码"""
+        if "username" not in request.data:
             return self.errUserResponse("", "账户不能为空")
-        pattern1 = r'^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$'
+        pattern1 = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"
         if not re.match(pattern1, request.data.get("username")):
             return self.errUserResponse("", "账户必须为邮箱格式")
         username = request.data.get("username")
-        if cache.get('EmailLock::'+username):
+        if cache.get("EmailLock::" + username):
             return self.errUserResponse("", "请勿频繁操作，120s后再重新提交请求")
         if User.objects.filter(username=request.data.get("username")).exists():
             return self.errUserResponse("", "账户已存在")
         # 生成6位数字验证码
-        email_code = ''.join(str(random.randint(0, 9)) for _ in range(6))
+        email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
         cache.set(username, email_code, 600)
         try:
             result = mail.send_mail(
-                subject='邮箱验证',  # 题目
+                subject="邮箱验证",  # 题目
                 message=email_code,  # 消息内容
                 from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
                 recipient_list=[username],  # 接收者邮件列表
             )
             LOGGER.info(result)
             if result == 1:
-                cache.set('EmailLock::'+username, 1, 10)
+                cache.set("EmailLock::" + username, 1, 10)
                 return self.sucUserResponse("", "邮件发送成功")
             else:
                 return self.errUserResponse("", "邮件发送失败")
         except Exception as e:
             return self.errUserResponse("", f"邮件发送出现异常: {str(e)}")
-        
+
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def testGetCache(self, request: Request) -> Response:
-        """ test Get Cache"""
+        """test Get Cache"""
         key = "my_key"
         value = cache.get(key)
         return self.sucUserResponse(value, "请求成功")
-    
+
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def testSetCache(self, request: Request) -> Response:
-        """ test Set Cache"""
+        """test Set Cache"""
         key = "my_key"
         value = 666
         cache.set(key, value, 10)
         return self.sucUserResponse(value, "请求成功")
-        
+
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def testSendMail(self, request: Request) -> Response:
-        """ test send mail"""
+        """test send mail"""
         # LOGGER.info(settings.EMAIL_HOST)
         # LOGGER.info(settings.EMAIL_PORT)
         # LOGGER.info(settings.EMAIL_HOST_USER)
@@ -1005,10 +1057,10 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         # LOGGER.info(settings.DEFAULT_FROM_EMAIL)
         try:
             result = mail.send_mail(
-                subject='在线计算器与编译器项目用户反馈',  # 题目
-                message='hi jack',  # 消息内容
+                subject="在线计算器与编译器项目用户反馈",  # 题目
+                message="hi jack",  # 消息内容
                 from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
-                recipient_list=['381618248@qq.com'],  # 接收者邮件列表
+                recipient_list=["381618248@qq.com"],  # 接收者邮件列表
             )
             LOGGER.info(result)
             if result == 1:
@@ -1017,29 +1069,30 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return self.errUserResponse("", "邮件发送失败")
         except Exception as e:
             return self.errUserResponse("", f"邮件发送出现异常: {str(e)}")
-        
+
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def picCode(self, request: Request) -> Response:
-        """ 图形验证码 """
-        def check_code(width=120, height=30, char_length=5, font_file='Monaco.ttf', font_size=28):
+        """图形验证码"""
+
+        def check_code(width=120, height=30, char_length=5, font_file="Monaco.ttf", font_size=28):
             code = []
-            img = Image.new(mode='RGB', size=(width, height), color=(255, 255, 255))
-            draw = ImageDraw.Draw(img, mode='RGB')
-        
+            img = Image.new(mode="RGB", size=(width, height), color=(255, 255, 255))
+            draw = ImageDraw.Draw(img, mode="RGB")
+
             def rndChar():
                 """
                 生成随机字母
                 :return:
                 """
                 return chr(random.randint(65, 90))
-        
+
             def rndColor():
                 """
                 生成随机颜色
                 :return:
                 """
                 return (random.randint(0, 255), random.randint(10, 255), random.randint(64, 255))
-        
+
             # 写文字
             font = ImageFont.truetype(font_file, font_size)
             for i in range(char_length):
@@ -1047,42 +1100,42 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 code.append(char)
                 h = random.randint(0, 4)
                 draw.text([i * width / char_length, h], char, font=font, fill=rndColor())
-        
+
             # 写干扰点
             for i in range(40):
                 draw.point([random.randint(0, width), random.randint(0, height)], fill=rndColor())
-        
+
             # 写干扰圆圈
             for i in range(40):
                 draw.point([random.randint(0, width), random.randint(0, height)], fill=rndColor())
                 x = random.randint(0, width)
                 y = random.randint(0, height)
                 draw.arc((x, y, x + 4, y + 4), 0, 90, fill=rndColor())
-        
+
             # 画干扰线
             for i in range(5):
                 x1 = random.randint(0, width)
                 y1 = random.randint(0, height)
                 x2 = random.randint(0, width)
                 y2 = random.randint(0, height)
-        
+
                 draw.line((x1, y1, x2, y2), fill=rndColor())
-        
+
             img = img.filter(ImageFilter.EDGE_ENHANCE_MORE)
-            return img, ''.join(code)
+            return img, "".join(code)
+
         # 调用poillow函数，生成图片
         img, code_string = check_code()
         print(code_string)
         # 创建内存中的文件
         stream = BytesIO()
-        img.save(stream, 'png')
+        img.save(stream, "png")
         # return HttpResponse(stream.getvalue())
-        response = HttpResponse(stream.getvalue(), content_type='image/png')
-        response['Content-Disposition'] = 'inline; filename=image.png'  # 可选设置文件名
+        response = HttpResponse(stream.getvalue(), content_type="image/png")
+        response["Content-Disposition"] = "inline; filename=image.png"  # 可选设置文件名
 
         return response
         # return self.sucUserResponse(value, "请求成功")
-
 
     def sucUserResponse(self, data="", msg="请求成功", code=1, status=200):
         response = {"data": data, "msg": msg, "code": code}

@@ -1,8 +1,8 @@
 """root settings for authentik"""
 
+import datetime
 import importlib
 import os
-import datetime
 from hashlib import sha512
 from pathlib import Path
 from urllib.parse import quote_plus
@@ -432,25 +432,27 @@ except ImportError:
 # Set the project base directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
 def read_env():
-    env_path = os.path.join(BASE_DIR, '.env')
+    env_path = os.path.join(BASE_DIR, ".env")
     if not os.path.exists(env_path):
         print(".env file does not exist")
         return
     with open(env_path) as f:
         for line in f:
-            if line.startswith('#') or not line.strip():
+            if line.startswith("#") or not line.strip():
                 continue
-            key, value = line.strip().split('=', 1)
-            key = key.strip(' \'\"')  # 去除两边的空格和单引号、双引号
-            value = value.strip(' \'\"')  # 去除两边的空格和单引号、双引号
+            key, value = line.strip().split("=", 1)
+            key = key.strip(" '\"")  # 去除两边的空格和单引号、双引号
+            value = value.strip(" '\"")  # 去除两边的空格和单引号、双引号
             os.environ[key] = value
+
 
 # 读取项目根目录的.env
 read_env()
 
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
-JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM')
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM")
 JWT_EXPIRATION_DELTA = datetime.timedelta(days=1)
 
-API_TOKEN = os.environ.get('API_TOKEN')
+API_TOKEN = os.environ.get("API_TOKEN")
