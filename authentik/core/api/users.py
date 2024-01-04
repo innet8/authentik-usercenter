@@ -891,11 +891,30 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def getList(self, request: Request) -> Response:
-        """ Get users """
+        """ 获取用户列表 """
         if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:
             users = User.objects.filter(type='external').values('username')
             user_data = list(users)
             return self.sucUserResponse(user_data)
+        else:
+            return self.errUserResponse("", "INVALID TOKENk")
+    
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def updateEmailVerify(self, request: Request) -> Response:
+        """ 更改用户邮箱验证状态 """
+        if 'HTTP_APITOKEN' in request.META and request.META['HTTP_APITOKEN'] == settings.API_TOKEN:
+            if 'username' not in request.data:
+                return self.errUserResponse("", "账户不能为空")
+            if 'is_verify_email' not in request.data:
+                return self.errUserResponse("", "验证状态不能为空")
+
+            user = User.objects.filter(username=request.data.get("username"), type='external').first()
+            if user:
+                user.is_verify_email =  True if request.data.get("is_verify_email") == 1 else False
+                user.save()
+                return self.sucUserResponse("", "修改成功")
+            else:
+                return self.errUserResponse("", "用户不存在")
         else:
             return self.errUserResponse("", "INVALID TOKENk")
         
@@ -1000,8 +1019,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", f"邮件发送出现异常: {str(e)}")
         
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
-    def test(self, request: Request) -> Response:
-        """ test"""
+    def picCode(self, request: Request) -> Response:
+        """ 图形验证码 """
         def check_code(width=120, height=30, char_length=5, font_file='Monaco.ttf', font_size=28):
             code = []
             img = Image.new(mode='RGB', size=(width, height), color=(255, 255, 255))
