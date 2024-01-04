@@ -952,31 +952,20 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def reset_password(self, request: Request) -> Response:
         """重置密码"""
         username = request.data.get("username")
-        old_password = request.data.get("old_password")
         new_password = request.data.get("new_password")
-        confirm_password = request.data.get("confirm_password")
 
         if not username:
             return self.errUserResponse("", "账号不能为空")
-        if not old_password:
-            return self.errUserResponse("", "旧密码不能为空")
         if not new_password:
             return self.errUserResponse("", "新密码不能为空")
         pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
         if not re.match(pattern, new_password):
             return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
-        if not confirm_password:
-            return self.errUserResponse("", "确认密码不能为空")
-        if new_password != confirm_password:
-            return self.errUserResponse("", "新密码和确认密码不匹配")
 
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             return self.errUserResponse("", "账号不存在")
-
-        if not user.check_password(old_password):
-            return self.errUserResponse("", "旧密码不正确")
 
         user.set_password(new_password)
         user.save()
@@ -1040,7 +1029,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         user = User.objects.filter(username=username).first()
         if user:
             cache.delete(code)
-            return redirect(CONFIG.get("app_url") + "page/resetPassword")
+            return redirect(CONFIG.get("app_url") + "page/resetPassword?username=" + username)
         else:
             return self.errUserResponse("", "用户不存在")
 
