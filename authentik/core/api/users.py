@@ -834,7 +834,18 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "账号不能为空")
         if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
-
+        attempts_key = f'password_attempts_{request.data.get("username")}'
+        attempts = cache.get(attempts_key, 0)
+        if attempts >= 4:
+            if "pic_code" not in request.data:
+                return self.errUserResponse("", "请输入图形验证码")
+            verify_key = f'verify_pic_code_{request.data.get("username")}'
+            verify_pic_code = cache.get(verify_key, '')
+            LOGGER.info(verify_key)
+            LOGGER.info(verify_pic_code)
+            if verify_pic_code != request.data.get("pic_code"):
+                return self.errUserResponse("", "图形验证码错误")
+            
         try:
             user = User.objects.get(username=request.data.get("username"))
             if not user:
@@ -859,8 +870,16 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
                 )
                 data = {"token": base64.b64encode(token.encode())}
+                # 登录成功，重置密码错误次数
+                cache.delete(attempts_key)
                 return self.sucUserResponse(data)
             else:
+                # 登录失败，增加密码错误次数
+                attempts = cache.get(attempts_key, 0)
+                attempt_num = attempts + 1
+                cache.set(attempts_key, attempt_num, 600)  # 设置过期时间为10分钟
+                if attempt_num >= 4:
+                    return self.errUserResponse("needcode", "账号或密码错误")
                 return self.errUserResponse("", "账号或密码错误")
         except User.DoesNotExist:
             return self.errUserResponse("", "账号或密码错误")
@@ -1065,50 +1084,10 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "邮件发送失败")
 
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
-    def testGetCache(self, request: Request) -> Response:
-        """test Get Cache"""
-        key = "my_key"
-        value = cache.get(key)
-        return self.sucUserResponse(value, "请求成功")
-
-    @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
-    def testSetCache(self, request: Request) -> Response:
-        """test Set Cache"""
-        key = "my_key"
-        value = 666
-        cache.set(key, value, 10)
-        return self.sucUserResponse(value, "请求成功")
-
-    @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
-    def testSendMail(self, request: Request) -> Response:
-        """test send mail"""
-        # LOGGER.info(settings.EMAIL_HOST)
-        # LOGGER.info(settings.EMAIL_PORT)
-        # LOGGER.info(settings.EMAIL_HOST_USER)
-        # LOGGER.info(settings.EMAIL_HOST_PASSWORD)
-        # LOGGER.info(settings.EMAIL_USE_TLS)
-        # LOGGER.info(settings.EMAIL_USE_SSL)
-        # LOGGER.info(settings.EMAIL_TIMEOUT)
-        # LOGGER.info(settings.DEFAULT_FROM_EMAIL)
-        try:
-            result = mail.send_mail(
-                subject="在线计算器与编译器项目用户反馈",  # 题目
-                message="hi jack",  # 消息内容
-                from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
-                recipient_list=["381618248@qq.com"],  # 接收者邮件列表
-            )
-            LOGGER.info(result)
-            if result == 1:
-                return self.sucUserResponse("", "邮件发送成功")
-            else:
-                return self.errUserResponse("", "邮件发送失败")
-        except Exception as e:
-            return self.errUserResponse("", f"邮件发送出现异常: {str(e)}")
-
-    @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def picCode(self, request: Request) -> Response:
         """图形验证码"""
-
+        username = request.query_params.get("username")
+        LOGGER.info(username)
         def check_code(width=120, height=30, char_length=5, font_file="Monaco.ttf", font_size=28):
             code = []
             img = Image.new(mode="RGB", size=(width, height), color=(255, 255, 255))
@@ -1162,6 +1141,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         # 调用poillow函数，生成图片
         img, code_string = check_code()
         print(code_string)
+        verify_key = f'verify_pic_code_{username}'
+        cache.set(verify_key, code_string, 600)
         # 创建内存中的文件
         stream = BytesIO()
         img.save(stream, "png")
