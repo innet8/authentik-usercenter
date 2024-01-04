@@ -845,7 +845,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             LOGGER.info(verify_pic_code)
             if verify_pic_code != request.data.get("pic_code"):
                 return self.errUserResponse("", "图形验证码错误")
-            
+
         try:
             user = User.objects.get(username=request.data.get("username"))
             if not user:

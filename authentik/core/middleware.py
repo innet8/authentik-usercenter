@@ -7,6 +7,10 @@ from django.http import HttpRequest, HttpResponse
 from django.utils.translation import activate
 from sentry_sdk.api import set_tag
 from structlog.contextvars import STRUCTLOG_KEY_PREFIX
+from django.http import HttpResponseForbidden
+from django.core.cache import cache
+from django.http import HttpResponse
+import json
 
 SESSION_KEY_IMPERSONATE_USER = "authentik/impersonate/user"
 SESSION_KEY_IMPERSONATE_ORIGINAL_USER = "authentik/impersonate/original_user"
@@ -72,3 +76,27 @@ class RequestIDMiddleware:
         response.ak_context[KEY_AUTH_VIA] = CTX_AUTH_VIA.get()
         response.ak_context[KEY_USER] = request.user.username
         return response
+
+class APILimitMiddleware:
+    """ 接口请求限制 """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        api_path = request.path
+        response = self.get_response(request)
+
+        if api_path not in ('/api/v3/core/users/login/', '/api/v3/core/users/register/'):
+            return response
+
+        ip_address = request.META.get('REMOTE_ADDR')
+        cache_key = f'api_request_limit:{ip_address}:{api_path}'
+        request_count = cache.get(cache_key, 0)
+        if request_count >= 60:
+            response_data = json.dumps({"data": "", "msg": "请勿频繁操作", "code": 500})
+            return HttpResponse(response_data, content_type='application/json')
+
+        cache.set(cache_key, request_count + 1, 60)
+        return response
+
+

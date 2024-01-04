@@ -230,6 +230,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "authentik.core.middleware.ImpersonateMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
+    "authentik.core.middleware.APILimitMiddleware",
 ]
 
 ROOT_URLCONF = "authentik.root.urls"
