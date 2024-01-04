@@ -974,9 +974,10 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         return self.sucUserResponse("", "密码已成功重置")
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
-    def retrieve_password(self, request: Request) -> Response:
-        """找回密码"""
+    def dispatch_email(self, request: Request) -> Response:
+        """邮件发送：找回密码、更新密码"""
         username = request.data.get("username")
+        key = request.data.get("key")
 
         if not username:
             return self.errUserResponse("", "账号不能为空")
@@ -995,15 +996,25 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         hash_object = hashlib.md5(token.encode())
         md5_hash = hash_object.hexdigest()
         cache.set(md5_hash, username, 600)
-        retrieve_password_link = (
-            CONFIG.get("app_url") + "/api/v3/core/users/verify_retrieve_password/?code=" + md5_hash
-        )
+        link = CONFIG.get("app_url") + "/api/v3/core/users/verify/?code=" + md5_hash
+        verification_code = "".join(str(random.randint(0, 9)) for _ in range(6))
 
-        mail_subject = "重置你的密码"
+        emailSuccessText = "邮件发送成功"
+        if key == 'retrieve_password':
+            mail_subject = "重置您的密码"
+            template_name = "email/retrieve_password_email.html"
+            emailSuccessText = "邮件下发成功，请前往邮箱进行重置密码"
+        elif key == 'update_password':
+            mail_subject = "更新你的密码"
+            template_name = "email/update_password_email.html"
+        else:
+            return self.errUserResponse("", "无效的邮件类型")
+
         html_message = render_to_string(
-            "email/retrieve_password_email.html",
+            template_name,
             {
-                "retrieve_password_link": retrieve_password_link,
+                "link": link,
+                "verification_code": verification_code,
                 "language": user.locale(request),
             },
         )
@@ -1015,7 +1026,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             html_message=html_message,
         )
         if result == 1:
-            return self.sucUserResponse("", "邮件下发成功，请前往邮箱进行重置密码")
+            return self.sucUserResponse("", emailSuccessText)
         else:
             return self.errUserResponse("", "邮件发送失败")
 
