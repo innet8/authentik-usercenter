@@ -749,7 +749,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
         if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
-        pattern2 = r'^(?:(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])|(?=.*[A-Z])(?=.*[a-z])(?=.*[^A-Za-z0-9\s])|(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])|(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])).{6,24}$'
+        pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
         if not re.match(pattern2, request.data.get("password")):
             return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
         if "source" not in request.data:
@@ -886,23 +886,61 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         },
     )
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def update_password(self, request: Request) -> Response:
+        """更新密码"""
+        token = request.data.get("token")
+        new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        if not token:
+            return self.errUserResponse("", "令牌不能为空")
+        if not new_password:
+            return self.errUserResponse("", "新密码不能为空")
+        pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
+        if not re.match(pattern, new_password):
+            return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
+        if not confirm_password:
+            return self.errUserResponse("", "确认密码不能为空")
+        if new_password != confirm_password:
+            return self.errUserResponse("", "新密码和确认密码不匹配")
+
+        try:
+            decoded_payload = jwt.decode(
+                token, settings.JWT_SECRET_KEY, algorithms=settings.JWT_ALGORITHM
+            )
+            username = decoded_payload.get('username')
+            user = User.objects.get(username=username)
+        except jwt.ExpiredSignatureError:
+            return self.errUserResponse("", "令牌已过期")
+        except jwt.InvalidTokenError:
+            return self.errUserResponse("", "无效令牌")
+        except User.DoesNotExist:
+            return self.errUserResponse("", "账号不存在")
+
+        user.set_password(new_password)
+        user.save()
+        return self.sucUserResponse("更新密码成功")
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def reset_password(self, request: Request) -> Response:
         """重置密码"""
-        # 获取请求中的账号和密码信息
         username = request.data.get("username")
         old_password = request.data.get("old_password")
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
 
-        # 验证账号和密码是否存在
         if not username:
             return self.errUserResponse("", "账号不能为空")
         if not old_password:
             return self.errUserResponse("", "旧密码不能为空")
         if not new_password:
             return self.errUserResponse("", "新密码不能为空")
+        pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
+        if not re.match(pattern, new_password):
+            return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
         if not confirm_password:
             return self.errUserResponse("", "确认密码不能为空")
+        if new_password != confirm_password:
+            return self.errUserResponse("", "新密码和确认密码不匹配")
 
         try:
             user = User.objects.get(username=username)
@@ -911,14 +949,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         if not user.check_password(old_password):
             return self.errUserResponse("", "旧密码不正确")
-
-        if new_password != confirm_password:
-            return self.errUserResponse("", "新密码和确认密码不匹配")
-
-        # 验证新密码是否符合规则
-        pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9])|(?=.*[A-Z])(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
-        if not re.match(pattern, new_password):
-            return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
 
         user.set_password(new_password)
         user.save()
