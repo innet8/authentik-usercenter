@@ -6,7 +6,6 @@ import { GlobalStore } from "@/store"
 export const loadingBarApiRef = ref(null)
 
 export default function createDemoRouter(app, routes) {
-
     const router = createRouter({
         history: createWebHistory(),
         routes

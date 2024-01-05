@@ -10,11 +10,11 @@
 }
 
 .n-config-provider {
-    --primary-color: #84C56A;
-    --primary-color-80: rgba(132, 197, 106, 0.8);
-    --primary-title-color: #303133;
-    --primary-text-color: #606266;
-    --primary-desc-color: #909399;
+    --primary-color: #0C9189;
+    --primary-color-80: rgba(12, 145, 137, 0.8);
+    --primary-title-color: #051B19;
+    --primary-text-color: #051B19;
+    --primary-desc-color: #84888C;
     --white-color: #ffffff;
     --white-color-80: rgba(255, 255, 255, 0.8);
     --white-color-50: rgba(255, 255, 255, 0.5);

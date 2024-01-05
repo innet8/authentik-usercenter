@@ -21,8 +21,7 @@ export namespace User {
         email: string
         username: string
         password: string
-        code_id?: string
-        code?: string
+        pic_code?: string
     }
 
     // 注册请求
@@ -31,11 +30,18 @@ export namespace User {
         password: string
         password2?: string
         source?: string
+        source_url?: any
+    }
+
+    // 注册请求
+    export interface resendData {
+        username: string
+        language: any
     }
 
     // 是否需要验证码
     export interface needCode {
-        email?: string
+        username?: string
     }
 
     // 获取验证码图片

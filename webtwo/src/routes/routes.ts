@@ -1,6 +1,7 @@
 import { $t } from "@/lang/index"
 import Login from '@/views/login.vue'
 import Register from '@/views/register.vue'
+import Activate from '@/views/activate.vue'
 import Success from '@/views/success.vue'
 
 export const routes = [
@@ -15,6 +16,12 @@ export const routes = [
         path: "/page/register",
         meta: { title: $t('注册'), login: false },
         component: Register
+    },
+    {
+        name: "activate",
+        path: "/page/activate",
+        meta: { title: $t('激活'), login: false },
+        component: Activate
     },
     {
         name: "success",
