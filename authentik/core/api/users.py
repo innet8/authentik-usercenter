@@ -790,7 +790,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
                 verification_link = (
                     CONFIG.get("app_url")
-                    + "/api/v3/core/users/sendRegisterEmailCode/?code="
+                    + "page/activate?code="
                     + md5_hash
                 )  # 消息内容
                 result = mail.send_mail(
@@ -1108,7 +1108,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if user:
             user.is_verify_email = True
             user.save()
-            return redirect(CONFIG.get("app_url") + "page/login")
+            return self.sucUserResponse("", "邮箱验证成功")        
         else:
             return self.errUserResponse("", "用户不存在")
 

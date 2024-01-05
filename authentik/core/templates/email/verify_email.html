@@ -1,12 +1,46 @@
+{% if language == 'zh-cn' %}
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Email Template</title>
+  <meta charset="UTF-8">
+  <title>创建您的AK账号</title>
 </head>
 <body>
-    <h1>欢迎注册</h1>
-    <p>亲爱的 {{ username }}，感谢你注册我们的网站！请点击以下链接完成邮箱验证：</p>
-    <a href="{{ verification_link }}">点击验证</a>
+  <p>要完成创建您的 AK 账户，请点击以下链接确认您的电子邮件地址：</p>
+  <a href="{{ verification_link }}">{{ verification_link }}</a>
+  <p>该请求将在 30 分钟后失效。</p>
+  <p>致以最真诚的问候，</p>
+  <p>AK团队</p>
 </body>
 </html>
+{% elif language == 'zh-tw' %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>创建您的AK账号</title>
+</head>
+<body>
+    <p>要完成创建您的 AK 账户，请点击以下链接确认您的电子邮件地址：</p>
+    <a href="{{ verification_link }}">{{ verification_link }}</a>
+    <p>该请求将在 30 分钟后失效。</p>
+    <p>致以最真诚的问候，</p>
+    <p>AK团队</p>
+</body>
+</html>
+{% else %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>创建您的AK账号</title>
+</head>
+<body>
+    <p>要完成创建您的 AK 账户，请点击以下链接确认您的电子邮件地址：</p>
+    <a href="{{ verification_link }}">{{ verification_link }}</a>
+    <p>该请求将在 30 分钟后失效。</p>
+    <p>致以最真诚的问候，</p>
+    <p>AK团队</p>
+</body>
+</html>
+{% endif %}
