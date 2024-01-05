@@ -925,11 +925,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", result)
         user = result
 
-        if not new_password:
-            return self.errUserResponse("", "新密码不能为空")
-        pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
-        if not re.match(pattern, new_password):
-            return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
+        is_valid_password, msg = self.validate_password(new_password)
+        if not is_valid_password:
+            return self.errUserResponse("", msg)
         if not confirm_password:
             return self.errUserResponse("", "确认密码不能为空")
         if new_password != confirm_password:
@@ -942,39 +940,62 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def update_email(self, request: Request) -> Response:
         """更新邮箱"""
-        token = request.data.get("token")
-        is_valid, result = self.check_token(token)
-        if not is_valid:
-            return self.errUserResponse("", result)
-        user = result
-
         step = request.data.get("step")
-        if step == 1:
-            username = request.data.get("username")
-            is_sent, message = self.dispatch_email(username, "retrieve_password", get_language())
+        if step == '1':
+            token = request.data.get("token")
+            is_valid, result = self.check_token(token)
+            if not is_valid:
+                return self.errUserResponse("", result)
+            username = result.username
+            is_sent, message, sign = self.dispatch_email(username, "original_email", get_language())
+            cache.set("update_email::" + sign, 1, 120)
             if is_sent:
-                return self.sucUserResponse("", message)
+                return self.sucUserResponse({"sign":sign}, message)
             else:
                 return self.errUserResponse("", message)
-        else:
+        elif step == '2':
+            sign = request.data.get("sign")
             new_email = request.data.get("new_email")
-            code = request.data.get("code")
-
-            if not new_email:
-                return self.errUserResponse("", "新邮箱不能为空")
-            pattern = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
-            if not re.match(pattern, new_email):
-                return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
-
-            is_valid, message = self.verify_code(code)
-            if not is_valid:
+            is_valid_username, msg = self.validate_username(new_email)
+            if not is_valid_username:
+                return self.errUserResponse("", msg)
+            is_valid_sign, message = self.verify_sign(sign)
+            if not is_valid_sign:
                 return self.errUserResponse("", message)
-
-            user.username = new_email
-            user.email = new_email
-            user.name = new_email
+            is_sent, message, sign2 = self.dispatch_email(new_email, "new_email", get_language())
+            if is_sent:
+                return self.sucUserResponse({"sign":sign2}, message)
+            else:
+                return self.errUserResponse("", message)
+        elif step == '3':
+            sign = request.data.get("sign")
+            code = request.data.get("code")
+            new_email = request.data.get("new_email")
+            is_valid_username, msg = self.validate_username(new_email)
+            if not is_valid_username:
+                return self.errUserResponse("", msg)
+            is_valid_sign, message = self.verify_sign(sign)
+            if not is_valid_sign:
+                return self.errUserResponse("", message)
+            is_valid_code, message = self.verify_code(code)
+            if not is_valid_code:
+                return self.errUserResponse("", message)
+            username = cache.get(code)
+            user = User.objects.get(username=username)
+            user.username = user.email = user.name = username
             user.save()
             return self.sucUserResponse("", "更新邮箱成功")
+        else:
+            return self.errUserResponse("", "无效的步骤")
+
+    def verify_sign(self, sign: str) -> tuple[bool, str]:
+        """验证签名"""
+        if not sign:
+            return False, "无效请求"
+        username = cache.get(sign)
+        if not username:
+            return False, "无效请求"
+        return True, "验证成功"
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def reset_password(self, request: Request) -> Response:
@@ -982,7 +1003,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         step = request.data.get("step")
         if step == 1:
             username = request.data.get("username")
-            is_sent, message = self.dispatch_email(username, "retrieve_password", get_language())
+            is_sent, message, _ = self.dispatch_email(username, "retrieve_password", get_language())
             if is_sent:
                 return self.sucUserResponse("", message)
             else:
@@ -994,11 +1015,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             username = cache.get(link_code)
             if not username:
                 return self.errUserResponse("", "链接已失效，请重新提交请求")
-            if not new_password:
-                return self.errUserResponse("", "新密码不能为空")
-            pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
-            if not re.match(pattern, new_password):
-                return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
+            is_valid_password, msg = self.validate_password(new_password)
+            if not is_valid_password:
+                return self.errUserResponse("", msg)
 
             try:
                 user = User.objects.get(username=username)
@@ -1010,23 +1029,36 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             cache.delete(link_code)
             return self.sucUserResponse("", "密码已成功重置")
 
-    def dispatch_email(self, username: str, key: str, lang: str) -> tuple[bool, str]:
-        """邮件发送：找回密码(retrieve_password)、更新密码(update_password)"""
+    def validate_username(self, username: str) -> tuple[bool, str]:
+        """验证用户名"""
         if not username:
             return False, "账号不能为空"
+        pattern = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
+        if not re.match(pattern, username):
+            return False, "账号必须为邮箱格式且最长100个字符"
+        return True, ""
+
+    def validate_password(self, password: str) -> tuple[bool, str]:
+        """验证密码"""
+        if not password:
+            return False, "新密码不能为空"
+        pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
+        if not re.match(pattern, password):
+            return False, "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上"
+        return True, ""
+
+    def dispatch_email(self, username: str, key: str, lang: str) -> tuple[bool, str, str]:
+        """邮件发送：找回密码(retrieve_password)、更改邮箱(original_email)、启用邮箱(new_email)"""
+        is_valid_username, msg = self.validate_username(username)
+        if not is_valid_username:
+            return False, msg, ""
 
         if cache.get("EmailLock::" + username):
-            return False, "请勿频繁操作，120s后再重新提交请求"
-
-        if not re.match(
-            r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$", username
-        ):
-            return False, "账号必须为邮箱格式且最长100个字符"
-
+            return False, "请勿频繁操作，120s后再重新提交请求", ""
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
-            return False, "账号不存在"
+            return False, "账号不存在", ""
 
         email_config = {
             "retrieve_password": {
@@ -1035,16 +1067,22 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 "success_text": "邮件下发成功，请前往邮箱进行重置密码",
                 "token": str(default_token_generator.make_token(user)),
             },
-            "update_password": {
-                "subject": "更新你的密码",
-                "template": "email/update_password.html",
+            "original_email": {
+                "subject": "更改您的邮箱",
+                "template": "email/original_email.html",
+                "success_text": "邮件发送成功",
+                "token": "".join(str(random.randint(0, 9)) for _ in range(6)),
+            },
+             "new_email": {
+                "subject": "启用您的邮箱",
+                "template": "email/new_email.html",
                 "success_text": "邮件发送成功",
                 "token": "".join(str(random.randint(0, 9)) for _ in range(6)),
             },
         }
 
         if key not in email_config:
-            return False, "无效的邮件类型"
+            return False, "无效的邮件类型", ""
 
         config = email_config[key]
         token = config["token"]
@@ -1072,9 +1110,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         )
         if result == 1:
             cache.set("EmailLock::" + username, 1, 120)
-            return True, config["success_text"]
+            return True, config["success_text"], md5_hash
         else:
-            return False, "邮件发送失败"
+            return False, "邮件发送失败", ""
 
     def check_token(self, token: str) -> tuple[bool, str or User]:
         """检测令牌"""
