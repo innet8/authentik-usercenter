@@ -5,7 +5,7 @@ from typing import Callable, Optional
 from uuid import uuid4
 
 from django.core.cache import cache
-from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
+from django.http import HttpRequest, HttpResponse
 from django.utils.translation import activate
 from sentry_sdk.api import set_tag
 from structlog.contextvars import STRUCTLOG_KEY_PREFIX

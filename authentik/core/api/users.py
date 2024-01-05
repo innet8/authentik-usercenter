@@ -2,7 +2,6 @@
 import base64
 import datetime
 import hashlib
-import os
 import random
 import re
 from datetime import timedelta
@@ -20,13 +19,14 @@ from django.core.cache import cache
 from django.db.models.functions import ExtractHour
 from django.db.transaction import atomic
 from django.db.utils import IntegrityError
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils.http import urlencode
 from django.utils.text import slugify
 from django.utils.timezone import now
+from django.utils.translation import get_language
 from django.utils.translation import gettext as _
 from django_filters.filters import (
     BooleanFilter,
@@ -775,6 +775,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     oldUser.delete()
                 user: User = User.objects.create(
                     username=username,
+                    email=username,
                     name=username,
                     type=UserTypes.EXTERNAL,
                     path=source,
@@ -788,11 +789,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 md5_hash = hash_object.hexdigest()
                 cache.set(md5_hash, username, 600)
 
-                verification_link = (
-                    CONFIG.get("app_url")
-                    + "page/activate?code="
-                    + md5_hash
-                )  # 消息内容
+                verification_link = CONFIG.get("app_url") + "page/activate?code=" + md5_hash  # 消息内容
                 result = mail.send_mail(
                     subject="邮箱验证",  # 题目
                     message="注册验证",
@@ -861,7 +858,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return self.errUserResponse("", "账号已禁用")
             if user.type != UserTypes.EXTERNAL:
                 return self.errUserResponse("", "禁止登录")
-            if user.is_verify_email == False:
+            if not user.is_verify_email:
                 return self.errUserResponse("", "邮箱未验证")
             re = user.check_password(request.data.get("password"))
             if re:
@@ -918,8 +915,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
 
-        if not token:
-            return self.errUserResponse("", "令牌不能为空")
+        is_valid, result = self.check_token(token)
+        if not is_valid:
+            return self.errUserResponse("", result)
+        user = result
+
         if not new_password:
             return self.errUserResponse("", "新密码不能为空")
         pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
@@ -930,6 +930,151 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if new_password != confirm_password:
             return self.errUserResponse("", "新密码和确认密码不匹配")
 
+        user.set_password(new_password)
+        user.save()
+        return self.sucUserResponse("", "更新密码成功")
+
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def update_email(self, request: Request) -> Response:
+        """更新邮箱"""
+        token = request.data.get("token")
+        is_valid, result = self.check_token(token)
+        if not is_valid:
+            return self.errUserResponse("", result)
+        user = result
+
+        step = request.data.get("step")
+        if step == 1:
+            username = request.data.get("username")
+            is_sent, message = self.dispatch_email(username, "retrieve_password", get_language())
+            if is_sent:
+                return self.sucUserResponse("", message)
+            else:
+                return self.errUserResponse("", message)
+        else:
+            new_email = request.data.get("new_email")
+            code = request.data.get("code")
+
+            if not new_email:
+                return self.errUserResponse("", "新邮箱不能为空")
+            pattern = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
+            if not re.match(pattern, new_email):
+                return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
+
+            is_valid, message = self.verify_code(code)
+            if not is_valid:
+                return self.errUserResponse("", message)
+
+            user.username = new_email
+            user.email = new_email
+            user.name = new_email
+            user.save()
+            return self.sucUserResponse("", "更新邮箱成功")
+
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def reset_password(self, request: Request) -> Response:
+        """重置密码"""
+        step = request.data.get("step")
+        if step == 1:
+            username = request.data.get("username")
+            is_sent, message = self.dispatch_email(username, "retrieve_password", get_language())
+            if is_sent:
+                return self.sucUserResponse("", message)
+            else:
+                return self.errUserResponse("", message)
+        else:
+            link_code = request.data.get("link_code")
+            new_password = request.data.get("new_password")
+
+            username = cache.get(link_code)
+            if not username:
+                return self.errUserResponse("", "链接已失效，请重新提交请求")
+            if not new_password:
+                return self.errUserResponse("", "新密码不能为空")
+            pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
+            if not re.match(pattern, new_password):
+                return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
+
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return self.errUserResponse("", "账号不存在")
+
+            user.set_password(new_password)
+            user.save()
+            cache.delete(link_code)
+            return self.sucUserResponse("", "密码已成功重置")
+
+    def dispatch_email(self, username: str, key: str, lang: str) -> tuple[bool, str]:
+        """邮件发送：找回密码(retrieve_password)、更新密码(update_password)"""
+        if not username:
+            return False, "账号不能为空"
+
+        if cache.get("EmailLock::" + username):
+            return False, "请勿频繁操作，120s后再重新提交请求"
+
+        if not re.match(
+            r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$", username
+        ):
+            return False, "账号必须为邮箱格式且最长100个字符"
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return False, "账号不存在"
+
+        email_config = {
+            "retrieve_password": {
+                "subject": "重置您的密码",
+                "template": "email/retrieve_password.html",
+                "success_text": "邮件下发成功，请前往邮箱进行重置密码",
+                "token": str(default_token_generator.make_token(user)),
+            },
+            "update_password": {
+                "subject": "更新你的密码",
+                "template": "email/update_password.html",
+                "success_text": "邮件发送成功",
+                "token": "".join(str(random.randint(0, 9)) for _ in range(6)),
+            },
+        }
+
+        if key not in email_config:
+            return False, "无效的邮件类型"
+
+        config = email_config[key]
+        token = config["token"]
+        hash_object = hashlib.md5(token.encode())
+        md5_hash = hash_object.hexdigest()
+        cache.set(md5_hash, username, 600)
+        link = (
+            CONFIG.get("app_url") + "/api/v3/core/users/verify_retrieve_password/?code=" + md5_hash
+        )
+
+        html_message = render_to_string(
+            config["template"],
+            {
+                "link": link,
+                "verification_code": token,
+                "language": lang,
+            },
+        )
+        result = mail.send_mail(
+            subject=config["subject"],
+            message=config["subject"],
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[username],
+            html_message=html_message,
+        )
+        if result == 1:
+            cache.set("EmailLock::" + username, 1, 120)
+            return True, config["success_text"]
+        else:
+            return False, "邮件发送失败"
+
+    def check_token(self, token: str) -> tuple[bool, str or User]:
+        """检测令牌"""
+        if not token:
+            return False, "令牌不能为空"
         try:
             token = base64.b64decode(token).decode()
             decoded_payload = jwt.decode(
@@ -937,102 +1082,46 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             )
             username = decoded_payload.get("username")
             user = User.objects.get(username=username)
+            return True, user
+        except UnicodeDecodeError:
+            return False, "无效令牌"
         except jwt.ExpiredSignatureError:
-            return self.errUserResponse("", "令牌已过期")
+            return False, "令牌已过期"
         except jwt.InvalidTokenError:
-            return self.errUserResponse("", "无效令牌")
+            return False, "无效令牌"
         except User.DoesNotExist:
-            return self.errUserResponse("", "账号不存在")
+            return False, "账号不存在"
+        except Exception:
+            return False, "无效令牌"
 
-        user.set_password(new_password)
-        user.save()
-        return self.sucUserResponse("", "更新密码成功")
-
-    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
-    def reset_password(self, request: Request) -> Response:
-        """重置密码"""
-        code = request.data.get("code")
-        new_password = request.data.get("new_password")
-        username = cache.get(code)
-
-        if not username:
-            return self.errUserResponse("", "链接已失效，请重新提交请求")
-        if not new_password:
-            return self.errUserResponse("", "新密码不能为空")
-        pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
-        if not re.match(pattern, new_password):
-            return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
-
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return self.errUserResponse("", "账号不存在")
-
-        user.set_password(new_password)
-        user.save()
-        cache.delete(code)
-        return self.sucUserResponse("", "密码已成功重置")
-
-    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
-    def dispatch_email(self, request: Request) -> Response:
-        """邮件发送：找回密码、更新密码"""
-        username = request.data.get("username")
-        key = request.data.get("key")
-
-        if not username:
-            return self.errUserResponse("", "账号不能为空")
-        if cache.get("EmailLock::" + username):
-            return self.errUserResponse("", "请勿频繁操作，120s后再重新提交请求")
-        pattern = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
-        if not re.match(pattern, username):
-            return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
-
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return self.errUserResponse("", "账号不存在")
-
-        token = str(default_token_generator.make_token(user))
-        hash_object = hashlib.md5(token.encode())
+    def verify_code(self, code: str) -> tuple[bool, str]:
+        """验证验证码"""
+        if not code:
+            return False, "验证码不能为空"
+        hash_object = hashlib.md5(code.encode())
         md5_hash = hash_object.hexdigest()
-        cache.set(md5_hash, username, 600)
-        link = CONFIG.get("app_url") + "/api/v3/core/users/verify/?code=" + md5_hash
-        verification_code = "".join(str(random.randint(0, 9)) for _ in range(6))
-
-        emailSuccessText = "邮件发送成功"
-        if key == 'retrieve_password':
-            mail_subject = "重置您的密码"
-            template_name = "email/retrieve_password_email.html"
-            emailSuccessText = "邮件下发成功，请前往邮箱进行重置密码"
-        elif key == 'update_password':
-            mail_subject = "更新你的密码"
-            template_name = "email/update_password_email.html"
+        key = cache.get(md5_hash)
+        if not key:
+            return False, "验证码已失效，请重新获取"
+        user = User.objects.filter(username=key).first()
+        if user:
+            return True, "验证成功"
         else:
-            return self.errUserResponse("", "无效的邮件类型")
+            return False, "验证码错误"
 
-        html_message = render_to_string(
-            template_name,
-            {
-                "link": link,
-                "verification_code": verification_code,
-                "language": user.locale(request),
-            },
-        )
-        result = mail.send_mail(
-            subject=mail_subject,  # 题目
-            message=mail_subject,
-            from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
-            recipient_list=[username],  # 接收者邮件列表
-            html_message=html_message,
-        )
-        if result == 1:
-            return self.sucUserResponse("", emailSuccessText)
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def verify_email_code(self, request: Request) -> Response:
+        """验证邮箱验证码"""
+        code = request.data.get("code")
+        is_valid, message = self.verify_code(code)
+        if is_valid:
+            return self.sucUserResponse("", message)
         else:
-            return self.errUserResponse("", "邮件发送失败")
+            return self.errUserResponse("", message)
 
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def verify_retrieve_password(self, request: Request) -> Response:
-        """验证注册邮箱"""
+        """验证忘记密码链接"""
         code = request.query_params.get("code")
         if not code:
             return self.errUserResponse("", "code不能为空")
@@ -1041,7 +1130,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "链接已失效，请重新提交请求")
         user = User.objects.filter(username=username).first()
         if user:
-            return redirect(CONFIG.get("app_url") + "page/resetPassword?code=" + code)
+            return redirect(CONFIG.get("app_url") + "page/resetPassword?link_code=" + code)
         else:
             return self.errUserResponse("", "用户不存在")
 
@@ -1062,6 +1151,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "令牌已过期")
         except jwt.InvalidTokenError:
             return self.errUserResponse("", "无效令牌")
+        except Exception:
+            return self.errUserResponse("", "无效令牌")
+
         return self.sucUserResponse(decoded_payload)
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
@@ -1108,7 +1200,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if user:
             user.is_verify_email = True
             user.save()
-            return self.sucUserResponse("", "邮箱验证成功")        
+            return self.sucUserResponse("", "邮箱验证成功")
         else:
             return self.errUserResponse("", "用户不存在")
 
@@ -1126,7 +1218,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         user = User.objects.filter(username=request.data.get("username")).first()
         if not user:
             return self.errUserResponse("", "用户不存在，请前往注册")
-        if user.is_verify_email == True:
+        if user.is_verify_email:
             return self.errUserResponse("", "邮箱已验证，请直接登录")
         # 生成6位数字验证码
         email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
