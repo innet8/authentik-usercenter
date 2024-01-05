@@ -760,6 +760,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         username = request.data.get("username")
         source = request.data.get("source")
+        source_url = request.data.get("source_url", "")
 
         if User.objects.filter(
             username=request.data.get("username"), is_verify_email=True
@@ -789,7 +790,13 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 md5_hash = hash_object.hexdigest()
                 cache.set(md5_hash, username, 600)
 
-                verification_link = CONFIG.get("app_url") + "page/activate?code=" + md5_hash  # 消息内容
+                verification_link = (
+                    CONFIG.get("app_url")
+                    + "page/activate?code="
+                    + md5_hash
+                    + "&source_url="
+                    + source_url
+                )  # 消息内容
                 result = mail.send_mail(
                     subject="邮箱验证",  # 题目
                     message="注册验证",
@@ -845,9 +852,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return self.errUserResponse("", "请输入图形验证码")
             verify_key = f'verify_pic_code_{request.data.get("username")}'
             verify_pic_code = cache.get(verify_key, "")
-            LOGGER.info(verify_key)
-            LOGGER.info(verify_pic_code)
-            if verify_pic_code != request.data.get("pic_code"):
+            if verify_pic_code.lower() != request.data.get("pic_code").lower():
                 return self.errUserResponse("", "图形验证码错误")
 
         try:
@@ -1249,7 +1254,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def picCode(self, request: Request) -> Response:
         """图形验证码"""
         username = request.query_params.get("username")
-        LOGGER.info(username)
 
         def check_code(width=120, height=30, char_length=5, font_file="Monaco.ttf", font_size=28):
             code = []
@@ -1315,6 +1319,16 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         return response
         # return self.sucUserResponse(value, "请求成功")
+    
+    @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
+    def needCode(self, request: Request) -> Response:
+        """登录是否需图像验证"""
+        username = request.query_params.get("username")
+        attempts_key = f'password_attempts_{username}'
+        attempts = cache.get(attempts_key, 0)
+        if attempts >= 4:
+            return self.sucUserResponse("y", "请求成功")
+        return self.sucUserResponse("n", "请求成功")
 
     def sucUserResponse(self, data="", msg="请求成功", code=1, status=200):
         response = {"data": data, "msg": msg, "code": code}
