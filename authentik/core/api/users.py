@@ -916,14 +916,20 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def update_password(self, request: Request) -> Response:
         """更新密码"""
-        token = request.data.get("token")
+        if not self.check_api_token(request):
+            return self.errUserResponse("", "INVALID TOKENk")
+        username = request.data.get("username")
+        old_password = request.data.get("old_password")
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
 
-        is_valid, result = self.check_token(token)
-        if not is_valid:
-            return self.errUserResponse("", result)
-        user = result
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return self.errUserResponse("", "账号不存在")
+
+        if not user.check_password(old_password):
+            return self.errUserResponse("", "原密码错误")
 
         is_valid_password, msg = self.validate_password(new_password)
         if not is_valid_password:
@@ -940,12 +946,16 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def update_email(self, request: Request) -> Response:
         """更新邮箱"""
+        if not self.check_api_token(request):
+            return self.errUserResponse("", "INVALID TOKENk")
         step = request.data.get("step")
-        token = request.data.get("token")
-        is_valid, result = self.check_token(token)
-        if not is_valid:
-            return self.errUserResponse("", result)
-        user = result
+
+        username = request.data.get("username")
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return self.errUserResponse("", "账号不存在")
+
         if step == 1:
             old_email_code = request.data.get("code")
             if not old_email_code:
@@ -1130,6 +1140,12 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return True, config["success_text"], md5_hash
         else:
             return False, "邮件发送失败", ""
+
+    def check_api_token(self, request: Request) -> bool:
+        """检查API令牌是否有效"""
+        return (
+            "HTTP_APITOKEN" in request.META and request.META["HTTP_APITOKEN"] == settings.API_TOKEN
+        )
 
     def check_token(self, token: str) -> tuple[bool, str or User]:
         """检测令牌"""
