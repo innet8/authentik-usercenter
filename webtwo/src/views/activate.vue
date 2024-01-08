@@ -10,11 +10,10 @@
     </div>
 </template>
 <script setup lang="ts">
-import { useRoute ,useRouter } from 'vue-router';
+import { useRoute  } from 'vue-router';
 import { verifyRegisterEmail } from '@/api/modules/user';
 import { useMessage } from "@/utils/messageAll"
 const route = useRoute()
-const router = useRouter()
 const message = useMessage()
 
 const handleActivate = () => {
@@ -25,7 +24,7 @@ const handleActivate = () => {
     }).then(({ data, msg }) => {
         message.success($t("激活成功！"))
         setTimeout(()=>{
-            router.push({name:'login'})
+            window.location.href = route.query.source_url.toString();
         },3000)
     })
         .catch(res => {

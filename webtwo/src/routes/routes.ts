@@ -2,7 +2,9 @@ import { $t } from "@/lang/index"
 import Login from '@/views/login.vue'
 import Register from '@/views/register.vue'
 import Activate from '@/views/activate.vue'
+import ResetPassword from '@/views/resetPassword.vue'
 import Success from '@/views/success.vue'
+
 
 export const routes = [
     {
@@ -22,6 +24,12 @@ export const routes = [
         path: "/page/activate",
         meta: { title: $t('激活'), login: false },
         component: Activate
+    },
+    {
+        name: "resetPassword",
+        path: "/page/resetPassword",
+        meta: { title: $t('重置密码'), login: false },
+        component: ResetPassword
     },
     {
         name: "success",

@@ -63,6 +63,11 @@
                                         class=" text-[#0C9189]">{{ formData.email }}</span>
                                     {{ $t('请点击我们刚刚发送到您收件箱的链接来确认您的电子邮件地址') }}</p>
                             </div>
+                            <div class="" v-if="loginType == 'secure'">
+                                <p class="text-text-li text-16 font-normal">{{ $t('平台已对用户账号进行了全面升级，请点击我们刚刚发送到您收件箱') }} <span
+                                        class=" text-[#0C9189]">（{{ formData.email }}）</span>
+                                    {{ $t('的链接来确认您的电子邮件地址！') }}</p>
+                            </div>
                             <div class="login-switch" v-if="config.switch !== 'false'">
                                 <template v-if="loginType == 'login'">
                                     <div class="flex items-center justify-between">
@@ -101,15 +106,22 @@
                                 :loading="loadIng" @click="handleResend">{{ resendCTime > 0 ? $t("重新发送") +
                                     `(${resendCTime})`
                                     : $t("重新发送验证邮件") }}</n-button>
-                            <n-button v-if="loginType == 'forgot'" type="primary" :loading="loadIng" @click="handleReset">{{
-                                $t("请求重置密码") }}</n-button>
+                            <n-button v-if="loginType == 'secure'" type="primary" :disabled="resendCTime > 0"
+                                :loading="loadIng" @click="handleResend">{{ resendCTime > 0 ? $t("重新发送") +
+                                    `(${resendCTime})`
+                                    : $t("重新发送验证邮件") }}</n-button>
+                            <n-button v-if="loginType == 'forgot'" type="primary" :loading="loadIng" :disabled="resetTime > 0" @click="handleReset">
+                                {{ resetTime > 0 ? $t("重新发送") + `(${resetTime})` : $t("请求重置密码") }}
+                            </n-button>
                             <template v-if="loginType == 'regSuccess'">
                                 <p class="flex justify-center mt-16 text-14 text-text-tips">
                                     {{ $t("已验证完邮箱或更换邮箱？") }}
-                                    <a class=" text-primary-color no-underline" href="javascript:void(0)" @click="changeLoginType('login')"> {{ $t("登录账号") }}</a>
+                                    <a class=" text-primary-color no-underline" href="javascript:void(0)"
+                                        @click="changeLoginType('login')"> {{ $t("登录账号") }}</a>
                                 </p>
                             </template>
-                            <div class="flex justify-center mt-32" v-if="loginType == 'forgot' || loginType == 'reg' || loginType == 'login'">
+                            <div class="flex justify-center mt-32"
+                                v-if="loginType == 'forgot' || loginType == 'reg' || loginType == 'login'">
                                 <n-dropdown trigger="click" :options="options" @select="setLanguage">
                                     <span class="flex items-center cursor-pointer text-14 gap-1 text-text-li"><img
                                             src="../statics/images/icon/global.svg">{{ languageLabel }} <n-icon
@@ -126,7 +138,7 @@
 
 <script lang="ts" setup>
 import { ref, computed } from "vue"
-import { userLogin, userReg, resend, needCode, retrievePassword } from "@/api/modules/user"
+import { userLogin, userReg, resend, needCode, resetPassword } from "@/api/modules/user"
 import { FormItemRule, useDialog } from "naive-ui"
 import { useMessage } from "@/utils/messageAll"
 import { UserStore } from "@/store/user"
@@ -145,6 +157,7 @@ const dialog = useDialog()
 const loginMode = ref("access") //qrcode
 const codeNeed = ref(false)
 const resendCTime = ref(0)
+const resetTime = ref(0)
 const loginType = ref<String>("login")
 const formRef = ref(null)
 const formData = ref({
@@ -240,6 +253,9 @@ const formTitle = computed(() => {
     if (loginType.value == 'forgot') {
         result = $t('忘记密码')
     }
+    if (loginType.value == 'secure') {
+        result = $t('账号安全升级')
+    }
     return result
 })
 
@@ -298,7 +314,6 @@ const handleLogin = () => {
 
 // 注册
 const handleReg = () => {
-    let callback = config.value.callback;
     formRef.value?.validate((errors) => {
         if (errors) {
             return
@@ -311,19 +326,15 @@ const handleReg = () => {
             source_url: config.value.sourceUrl || '',
         }).then(({ data, msg }) => {
             message.success($t("注册成功"))
-            if (callback) {
-                callback = callback.indexOf("?") == -1 ? callback + "?ak-token=" : callback + "&ak-token="
-                parent.window.location.href = callback + (data.token || "")
-            } else {
-                loginType.value = "regSuccess"
-                resendCTime.value = 120
-                let times = setInterval(() => {
-                    resendCTime.value--;
-                    if (resendCTime.value <= 0) {
-                        clearInterval(times);
-                    }
-                }, 1000);
-            }
+            loginType.value = "regSuccess"
+            resendCTime.value = 120
+            let times = setInterval(() => {
+                resendCTime.value--;
+                if (resendCTime.value <= 0) {
+                    clearInterval(times);
+                }
+            }, 1000);
+
         })
             .catch(res => {
                 message.error($t(res.msg))
@@ -359,14 +370,23 @@ const handleResend = () => {
         })
 
 }
-// 重新发送
+
+// 找回密码
 const handleReset = () => {
     loadIng.value = true
-    retrievePassword({
+    resetPassword({
+        step: 1,
         username: formData.value.email,
-        language: route.query.language,
+        source_url: config.value.sourceUrl || '',
     }).then(({ data, msg }) => {
         message.success($t("发送成功！"))
+        resetTime.value = 120
+        let times = setInterval(() => {
+            resetTime.value--;
+            if (resetTime.value <= 0) {
+                clearInterval(times);
+            }
+        }, 1000);
     })
         .catch(res => {
             message.error($t(res.msg))

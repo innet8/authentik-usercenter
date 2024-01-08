@@ -38,6 +38,14 @@ export namespace User {
         username: string
         language: any
     }
+    // 注册请求
+    export interface resetData {
+        step: Number
+        username?: any
+        link_code?: any
+        new_password?: any
+        source_url?: any
+    }
 
     // 是否需要验证码
     export interface needCode {

@@ -22,9 +22,11 @@ export const needCode = (params: User.needCode) => {
 export const resend = (params: User.resendData) => {
     return http.post<User.Info>("/core/users/sendRegisterVerifyEmail/", params)
 }
+
+
 //找回密码发送邮件
-export const retrievePassword = (params: User.resendData) => {
-    return http.post<User.Info>("/core/users/retrieve_password", params)
+export const resetPassword = (params: User.resetData) => {
+    return http.post<any>("/core/users/reset_password/", params)
 }
 
 //邮件激活
