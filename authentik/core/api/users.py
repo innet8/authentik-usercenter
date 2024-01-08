@@ -941,40 +941,41 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def update_email(self, request: Request) -> Response:
         """更新邮箱"""
         step = request.data.get("step")
-        if step == '1':
-            token = request.data.get("token")
-            is_valid, result = self.check_token(token)
-            if not is_valid:
-                return self.errUserResponse("", result)
-            username = result.username
+        token = request.data.get("token")
+        is_valid, result = self.check_token(token)
+        if not is_valid:
+            return self.errUserResponse("", result)
+        username = result.username
+        if step == "1":
             is_sent, message, sign = self.dispatch_email(username, "original_email", get_language())
-            cache.set("update_email::" + sign, 1, 120)
+            cache.set("update_email::" + username + sign, 1, 1800)
             if is_sent:
-                return self.sucUserResponse({"sign":sign}, message)
+                return self.sucUserResponse({"sign": sign}, message)
             else:
                 return self.errUserResponse("", message)
-        elif step == '2':
+        elif step == "2":
             sign = request.data.get("sign")
             new_email = request.data.get("new_email")
             is_valid_username, msg = self.validate_username(new_email)
             if not is_valid_username:
                 return self.errUserResponse("", msg)
-            is_valid_sign, message = self.verify_sign(sign)
+            is_valid_sign, message = self.verify_sign(username, sign)
             if not is_valid_sign:
                 return self.errUserResponse("", message)
             is_sent, message, sign2 = self.dispatch_email(new_email, "new_email", get_language())
+            cache.set("update_email::" + new_email + sign2, 1, 1800)
             if is_sent:
-                return self.sucUserResponse({"sign":sign2}, message)
+                return self.sucUserResponse({"sign": sign2}, message)
             else:
                 return self.errUserResponse("", message)
-        elif step == '3':
+        elif step == "3":
             sign = request.data.get("sign")
             code = request.data.get("code")
             new_email = request.data.get("new_email")
             is_valid_username, msg = self.validate_username(new_email)
             if not is_valid_username:
                 return self.errUserResponse("", msg)
-            is_valid_sign, message = self.verify_sign(sign)
+            is_valid_sign, message = self.verify_sign(username, sign)
             if not is_valid_sign:
                 return self.errUserResponse("", message)
             is_valid_code, message = self.verify_code(code)
@@ -986,14 +987,13 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             user.save()
             return self.sucUserResponse("", "更新邮箱成功")
         else:
-            return self.errUserResponse("", "无效的步骤")
+            return self.errUserResponse("", "无效请求")
 
-    def verify_sign(self, sign: str) -> tuple[bool, str]:
+    def verify_sign(self, username: str, sign: str) -> tuple[bool, str]:
         """验证签名"""
         if not sign:
             return False, "无效请求"
-        username = cache.get(sign)
-        if not username:
+        if not cache.get("update_email::" + username + sign):
             return False, "无效请求"
         return True, "验证成功"
 
@@ -1073,7 +1073,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 "success_text": "邮件发送成功",
                 "token": "".join(str(random.randint(0, 9)) for _ in range(6)),
             },
-             "new_email": {
+            "new_email": {
                 "subject": "启用您的邮箱",
                 "template": "email/new_email.html",
                 "success_text": "邮件发送成功",
@@ -1357,12 +1357,12 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         return response
         # return self.sucUserResponse(value, "请求成功")
-    
+
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def needCode(self, request: Request) -> Response:
         """登录是否需图像验证"""
         username = request.query_params.get("username")
-        attempts_key = f'password_attempts_{username}'
+        attempts_key = f"password_attempts_{username}"
         attempts = cache.get(attempts_key, 0)
         if attempts >= 4:
             return self.sucUserResponse("y", "请求成功")
