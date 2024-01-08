@@ -2,7 +2,7 @@
     <div class="page-activate child-view">
         <div class="activate-body">
             <div class="activate-box">
-                <img class=" m-auto block rotate-image" src="@/statics/images/icon/loading-full 1.svg">
+                <img class=" m-auto block rotate-image" src="@/statics/images/icon/loading-full.svg">
                     <h3 class="text-32 font-semibold text-center text-text-li mt-40">{{ $t('激活账号中...') }}</h3>
                     <p class="text-16 text-center text-text-li mt-16">{{ $t('账号激活中，请耐心等待，激活成功后页面自动刷新页面') }}</p>
             </div>
