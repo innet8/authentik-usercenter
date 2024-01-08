@@ -96,8 +96,8 @@ def detection_password(self: MonitoredTask):
                 source = "PWF"
                 source_all = "Pocket Wallet Finance"
             result = mail.send_mail(
-                subject="账号安全升级通知邮件",  # 题目
-                message="账号安全升级通知邮件",
+                subject="Account Security Upgrade Notice",  # 题目
+                message="Account Security Upgrade Notice",
                 from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
                 recipient_list=[user.email],  # 接收者邮件列表
                 html_message=render_to_string(
