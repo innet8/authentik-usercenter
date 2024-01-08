@@ -945,54 +945,57 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         is_valid, result = self.check_token(token)
         if not is_valid:
             return self.errUserResponse("", result)
-        username = result.username
-        if step == "1":
-            is_sent, message, sign = self.dispatch_email(username, "original_email", get_language())
-            cache.set("update_email::" + username + sign, 1, 1800)
-            if is_sent:
-                return self.sucUserResponse({"sign": sign}, message)
+        user = result
+        if step == 1:
+            old_email_code = request.data.get("code")
+            if not old_email_code:
+                is_sent, message, sign = self.dispatch_email(
+                    user.username, "original_email", get_language()
+                )
+                cache.set("update_email::" + user.username + sign, 1, 30 * 60)
+                if is_sent:
+                    return self.sucUserResponse({"sign": sign}, message)
+                else:
+                    return self.errUserResponse("", message)
             else:
-                return self.errUserResponse("", message)
-        elif step == "2":
+                is_valid_code, message = self.verify_dispatch_email_code(
+                    user.username, old_email_code
+                )
+                if not is_valid_code:
+                    return self.errUserResponse("", message)
+                cache.delete(old_email_code)
+                return self.sucUserResponse("", "成功")
+        elif step == 2:
             sign = request.data.get("sign")
             new_email = request.data.get("new_email")
+            new_email_code = request.data.get("code")
             is_valid_username, msg = self.validate_username(new_email)
             if not is_valid_username:
                 return self.errUserResponse("", msg)
-            is_valid_sign, message = self.verify_sign(username, sign)
+            is_valid_sign, message = self.verify_sign(user.username, sign)
             if not is_valid_sign:
                 return self.errUserResponse("", message)
-            is_sent, message, sign2 = self.dispatch_email(new_email, "new_email", get_language())
-            cache.set("update_email::" + new_email + sign2, 1, 1800)
-            if is_sent:
-                return self.sucUserResponse({"sign": sign2}, message)
+            if not new_email_code:
+                is_sent, message, _ = self.dispatch_email(new_email, "new_email", get_language())
+                if is_sent:
+                    return self.sucUserResponse("", message)
+                else:
+                    return self.errUserResponse("", message)
             else:
-                return self.errUserResponse("", message)
-        elif step == "3":
-            sign = request.data.get("sign")
-            code = request.data.get("code")
-            new_email = request.data.get("new_email")
-            is_valid_username, msg = self.validate_username(new_email)
-            if not is_valid_username:
-                return self.errUserResponse("", msg)
-            is_valid_sign, message = self.verify_sign(username, sign)
-            if not is_valid_sign:
-                return self.errUserResponse("", message)
-            is_valid_code, message = self.verify_code(code)
-            if not is_valid_code:
-                return self.errUserResponse("", message)
-            username = cache.get(code)
-            user = User.objects.get(username=username)
-            user.username = user.email = user.name = username
-            user.save()
-            return self.sucUserResponse("", "更新邮箱成功")
+                is_valid_code, message = self.verify_dispatch_email_code(new_email, new_email_code)
+                if not is_valid_code:
+                    return self.errUserResponse("", message)
+                user.username = user.email = user.name = new_email
+                user.save()
+                cache.delete(sign)
+                return self.sucUserResponse("", "更新邮箱成功")
         else:
-            return self.errUserResponse("", "无效请求")
+            return self.errUserResponse("", "无效操作")
 
     def verify_sign(self, username: str, sign: str) -> tuple[bool, str]:
         """验证签名"""
         if not sign:
-            return False, "无效请求"
+            return False, "无效签名"
         if not cache.get("update_email::" + username + sign):
             return False, "无效请求"
         return True, "验证成功"
@@ -1055,17 +1058,20 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         if cache.get("EmailLock::" + username):
             return False, "请勿频繁操作，120s后再重新提交请求", ""
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return False, "账号不存在", ""
+
+        user = None
+        if key == "retrieve_password":
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return False, "账号不存在", ""
 
         email_config = {
             "retrieve_password": {
                 "subject": "重置您的密码",
                 "template": "email/retrieve_password.html",
                 "success_text": "邮件下发成功，请前往邮箱进行重置密码",
-                "token": str(default_token_generator.make_token(user)),
+                "token": str(default_token_generator.make_token(user)) if user else "",
             },
             "original_email": {
                 "subject": "更改您的邮箱",
@@ -1088,9 +1094,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         token = config["token"]
         hash_object = hashlib.md5(token.encode())
         md5_hash = hash_object.hexdigest()
-        cache.set(md5_hash, username, 600)
+        cache.set(md5_hash, username, 30 * 60)
         link = (
-            CONFIG.get("app_url") + "/api/v3/core/users/verify_retrieve_password/?code=" + md5_hash
+            CONFIG.get("app_url") + "api/v3/core/users/verify_retrieve_password/?code=" + md5_hash
         )
 
         html_message = render_to_string(
@@ -1137,30 +1143,19 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         except Exception:
             return False, "无效令牌"
 
-    def verify_code(self, code: str) -> tuple[bool, str]:
+    def verify_dispatch_email_code(self, username: str, code: str) -> tuple[bool, str]:
         """验证验证码"""
         if not code:
             return False, "验证码不能为空"
         hash_object = hashlib.md5(code.encode())
         md5_hash = hash_object.hexdigest()
-        key = cache.get(md5_hash)
-        if not key:
+        val = cache.get(md5_hash)
+        if not val:
             return False, "验证码已失效，请重新获取"
-        user = User.objects.filter(username=key).first()
-        if user:
+        if username == val:
             return True, "验证成功"
         else:
             return False, "验证码错误"
-
-    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
-    def verify_email_code(self, request: Request) -> Response:
-        """验证邮箱验证码"""
-        code = request.data.get("code")
-        is_valid, message = self.verify_code(code)
-        if is_valid:
-            return self.sucUserResponse("", message)
-        else:
-            return self.errUserResponse("", message)
 
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def verify_retrieve_password(self, request: Request) -> Response:
