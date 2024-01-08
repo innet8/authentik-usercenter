@@ -104,14 +104,15 @@
                                 $t("注册") }}</n-button>
                             <n-button v-if="loginType == 'regSuccess'" type="primary" :disabled="resendCTime > 0"
                                 :loading="loadIng" @click="handleResend">{{ resendCTime > 0 ? $t("重新发送") +
-                                    `(${resendCTime})`
+                                    `(${resendCTime}s)`
                                     : $t("重新发送验证邮件") }}</n-button>
-                            <n-button v-if="loginType == 'secure'" type="primary" :disabled="resendCTime > 0"
-                                :loading="loadIng" @click="handleResend">{{ resendCTime > 0 ? $t("重新发送") +
-                                    `(${resendCTime})`
+                            <n-button v-if="loginType == 'secure'" type="primary" :disabled="resetTime > 0"
+                                :loading="loadIng" @click="handleReset">{{ resetTime > 0 ? $t("重新发送") +
+                                    `(${resetTime}s)`
                                     : $t("重新发送验证邮件") }}</n-button>
-                            <n-button v-if="loginType == 'forgot'" type="primary" :loading="loadIng" :disabled="resetTime > 0" @click="handleReset">
-                                {{ resetTime > 0 ? $t("重新发送") + `(${resetTime})` : $t("请求重置密码") }}
+                            <n-button v-if="loginType == 'forgot'" type="primary" :loading="loadIng"
+                                :disabled="resetTime > 0" @click="handleReset">
+                                {{ resetTime > 0 ? $t("重新发送") + `(${resetTime}s)` : $t("请求重置密码") }}
                             </n-button>
                             <template v-if="loginType == 'regSuccess'">
                                 <p class="flex justify-center mt-16 text-14 text-text-tips">
@@ -190,7 +191,7 @@ const languageLabel = computed(() => {
 const config = ref({
     language: route.query.language || 'zh-CHT',         //  显示语言 - en、zh、zh-cht、fr、id、ja、ko
     source: route.query.source || '',              //  来源
-    sourceUrl: route.query.sourceUrl || '',              //  来源
+    sourceUrl: route.query.sourceUrl || '',              //  来源URL
     callback: route.query.callback || '',          //  登录成功后浏览器去往的地址
     title: route.query.title || '',                //  标题
     subtitle: route.query.subtitle || '',          //  标题下方的描述
@@ -291,6 +292,7 @@ const handleLogin = () => {
             username: formData.value.email,
             password: formData.value.password,
             pic_code: code.value,
+            source_url: config.value.sourceUrl || '',
         }).then(({ data, msg }) => {
             userState.info = data
             if (callback) {
@@ -301,13 +303,15 @@ const handleLogin = () => {
             }
         })
             .catch(res => {
-                message.error($t(res.msg))
+                loadIng.value = false
                 if (res.data == "needcode") {
                     onBlur()
+                    message.error($t(res.msg))
                 }
-            })
-            .finally(() => {
-                loadIng.value = false
+                if (res.code == "10") {
+                    loginType.value = 'secure'
+                    handleReset();
+                }
             })
     }).catch(_ => { })
 }

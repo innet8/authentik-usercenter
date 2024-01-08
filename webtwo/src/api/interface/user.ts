@@ -22,6 +22,7 @@ export namespace User {
         username: string
         password: string
         pic_code?: string
+        source_url?: any
     }
 
     // 注册请求
