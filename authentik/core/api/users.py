@@ -976,7 +976,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 if not is_valid_code:
                     return self.errUserResponse("", message)
                 cache.delete(old_email_code)
-                return self.sucUserResponse("", "成功")
+                return self.sucUserResponse({"step": 2}, "验证成功")
         elif step == 2:
             sign = request.data.get("sign")
             new_email = request.data.get("new_email")
