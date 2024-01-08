@@ -5,6 +5,10 @@ from django.contrib.sessions.backends.cache import KEY_PREFIX
 from django.core.cache import cache
 from django.utils.timezone import now
 from structlog.stdlib import get_logger
+import subprocess
+from django.core import mail
+from django.conf import settings
+from django.template.loader import render_to_string
 
 from authentik.core.models import (
     USER_ATTRIBUTE_EXPIRES,
@@ -76,3 +80,37 @@ def clean_temporary_users(self: MonitoredTask):
             deleted_users += 1
     messages.append(f"Successfully deleted {deleted_users} users.")
     self.set_status(TaskResult(TaskResultStatus.SUCCESSFUL, messages))
+
+@CELERY_APP.task(bind=True, base=MonitoredTask)
+@prefill_task
+def detection_password(self: MonitoredTask):
+    """Sources"""
+    #
+    subprocess.run("echo '1' > test.text", shell=True, capture_output=True, text=True)
+    #
+    for user in User.objects.filter(password='', is_send_email=False):
+        if user.email:
+            source = user.path
+            source_all = source
+            if source == "pwf":
+                source = "PWF"
+                source_all = "Pocket Wallet Finance"
+            result = mail.send_mail(
+                subject="账号安全升级通知邮件",  # 题目
+                message="账号安全升级通知邮件",
+                from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
+                recipient_list=[user.email],  # 接收者邮件列表
+                html_message=render_to_string(
+                    "email/upgrade_notification.html",
+                    {"source": source, "source_all": source_all},
+                ),
+            )
+            if result == 1:
+                user.is_send_email = True
+                user.save()
+            else:
+                rq_num = cache.get(user.email, 0)
+                cache.set(user.email, rq_num + 1)
+                if rq_num > 3:
+                    user.is_send_email = True
+                    user.save()

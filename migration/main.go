@@ -112,8 +112,8 @@ func main() {
 		currentTime := time.Now()
 		formattedTime := currentTime.Format("2006-01-02 15:04:05")
 		_, err = postgresDB.Exec(`
-			INSERT INTO authentik_core_user (username,email,password,first_name,last_name,is_active,date_joined,uuid,name,password_change_date,attributes,path,type,is_verify_email)
-			VALUES ($1,$2,'','','','t',$3,$4,$5,$6,'{}',$7,'external','t')
+			INSERT INTO authentik_core_user (username,email,password,first_name,last_name,is_active,date_joined,uuid,name,password_change_date,attributes,path,type,is_verify_email,is_send_email)
+			VALUES ($1,$2,'','','','t',$3,$4,$5,$6,'{}',$7,'external','t','f')
 			`,
 			email,
 			email,

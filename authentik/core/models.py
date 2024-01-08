@@ -179,6 +179,7 @@ class User(SerializerModel, GuardianUserMixin, AbstractUser):
     path = models.TextField(default="users")
     type = models.TextField(choices=UserTypes.choices, default=UserTypes.INTERNAL)
     is_verify_email = models.BooleanField(default=True)
+    is_send_email = models.BooleanField(default=True)
 
     sources = models.ManyToManyField("Source", through="UserSourceConnection")
     ak_groups = models.ManyToManyField("Group", related_name="users")

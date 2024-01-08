@@ -348,6 +348,11 @@ CELERY = {
             "schedule": crontab(minute="9-59/5"),
             "options": {"queue": "authentik_scheduled"},
         },
+        "detection_password": {
+            "task": "authentik.core.tasks.detection_password",
+            "schedule": crontab(minute="1-59/1"),
+            "options": {"queue": "authentik_scheduled"},
+        },
     },
     "task_create_missing_queues": True,
     "task_default_queue": "authentik",
