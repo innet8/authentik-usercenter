@@ -15,6 +15,8 @@ import (
 )
 
 type Config struct {
+	SOURCE string `yaml:"SOURCE"`
+
 	MYSQL_HOST     string `yaml:"MYSQL_HOST"`
 	MYSQL_PORT     string `yaml:"MYSQL_PORT"`
 	MYSQL_DATABASE string `yaml:"MYSQL_DATABASE"`
@@ -111,7 +113,7 @@ func main() {
 		formattedTime := currentTime.Format("2006-01-02 15:04:05")
 		_, err = postgresDB.Exec(`
 			INSERT INTO authentik_core_user (username,email,password,first_name,last_name,is_active,date_joined,uuid,name,password_change_date,attributes,path,type,is_verify_email)
-			VALUES ($1,$2,'','','','t',$3,$4,$5,$6,'{}','pwf','external','t')
+			VALUES ($1,$2,'','','','t',$3,$4,$5,$6,'{}',$7,'external','t')
 			`,
 			email,
 			email,
@@ -119,6 +121,7 @@ func main() {
 			uuid.String(),
 			email,
 			formattedTime,
+			config.SOURCE,
 		)
 		if err != nil {
 			fmt.Printf("导入邮箱 '%s' 失败 \n", email)

@@ -1,3 +1,6 @@
+# 来源标识
+SOURCE: pwf
+
 # 导出的数据库配置
 MYSQL_HOST: huofu.vip
 MYSQL_PORT: 33044
