@@ -950,7 +950,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             old_email_code = request.data.get("code")
             if not old_email_code:
                 is_sent, message, sign = self.dispatch_email(
-                    user.username, "original_email", get_language()
+                    user.username, "original_email", get_language(), ""
                 )
                 cache.set("update_email::" + user.username + sign, 1, 30 * 60)
                 if is_sent:
@@ -976,7 +976,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             if not is_valid_sign:
                 return self.errUserResponse("", message)
             if not new_email_code:
-                is_sent, message, _ = self.dispatch_email(new_email, "new_email", get_language())
+                is_sent, message, _ = self.dispatch_email(
+                    new_email, "new_email", get_language(), ""
+                )
                 if is_sent:
                     return self.sucUserResponse("", message)
                 else:
@@ -1004,9 +1006,12 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def reset_password(self, request: Request) -> Response:
         """重置密码"""
         step = request.data.get("step")
+        source_url = request.data.get("source_url", "")
         if step == 1:
             username = request.data.get("username")
-            is_sent, message, _ = self.dispatch_email(username, "retrieve_password", get_language())
+            is_sent, message, _ = self.dispatch_email(
+                username, "retrieve_password", get_language(), source_url
+            )
             if is_sent:
                 return self.sucUserResponse("", message)
             else:
@@ -1050,7 +1055,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return False, "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上"
         return True, ""
 
-    def dispatch_email(self, username: str, key: str, lang: str) -> tuple[bool, str, str]:
+    def dispatch_email(
+        self, username: str, key: str, lang: str, source_url: str
+    ) -> tuple[bool, str, str]:
         """邮件发送：找回密码(retrieve_password)、更改邮箱(original_email)、启用邮箱(new_email)"""
         is_valid_username, msg = self.validate_username(username)
         if not is_valid_username:
@@ -1096,7 +1103,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         md5_hash = hash_object.hexdigest()
         cache.set(md5_hash, username, 30 * 60)
         link = (
-            CONFIG.get("app_url") + "api/v3/core/users/verify_retrieve_password/?code=" + md5_hash
+            CONFIG.get("app_url")
+            + "api/v3/core/users/verify_retrieve_password/?code="
+            + md5_hash
+            + "&source_url="
+            + source_url
         )
 
         html_message = render_to_string(
@@ -1161,6 +1172,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def verify_retrieve_password(self, request: Request) -> Response:
         """验证忘记密码链接"""
         code = request.query_params.get("code")
+        source_url = request.query_params.get("source_url")
         if not code:
             return self.errUserResponse("", "code不能为空")
         username = cache.get(code)
@@ -1168,7 +1180,13 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "链接已失效，请重新提交请求")
         user = User.objects.filter(username=username).first()
         if user:
-            return redirect(CONFIG.get("app_url") + "page/resetPassword?link_code=" + code)
+            return redirect(
+                CONFIG.get("app_url")
+                + "page/resetPassword?link_code="
+                + code
+                + "&source_url="
+                + source_url
+            )
         else:
             return self.errUserResponse("", "用户不存在")
 
