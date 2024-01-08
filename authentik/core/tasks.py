@@ -85,7 +85,7 @@ def clean_temporary_users(self: MonitoredTask):
 @prefill_task
 def detection_password(self: MonitoredTask):
     """Sources"""
-    #
+    # DOTO 打个文件进行测试
     subprocess.run("echo '1' > test.text", shell=True, capture_output=True, text=True)
     #
     for user in User.objects.filter(password='', is_send_email=False):
