@@ -1344,7 +1344,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return (random.randint(0, 255), random.randint(10, 255), random.randint(64, 255))
 
             # 写文字
-            font = ImageFont.truetype(font_file, font_size)
+            font = ImageFont.truetype(settings.BASE_DIR + '/' + font_file, font_size)
             for i in range(char_length):
                 char = rndChar()
                 code.append(char)
