@@ -91,7 +91,7 @@ services:
   celery:
     image: ${AUTHENTIK_IMAGE:-authentik-usercenter}:${AUTHENTIK_TAG:-latest}
     restart: unless-stopped
-    command: celery -A authentik.root.celery beat --loglevel=INFO
+    command: "celery -A authentik.root.celery beat --loglevel=INFO"
     environment:
       AUTHENTIK_REDIS__HOST: redis
       AUTHENTIK_POSTGRESQL__HOST: postgresql
