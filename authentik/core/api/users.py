@@ -864,7 +864,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             if user.type != UserTypes.EXTERNAL:
                 return self.errUserResponse("", "禁止登录")
             if user.password == '':
-                return self.errUserResponse("", "请前往安全升级",)
+                return self.errUserResponse("", "请前往安全升级", 10)
             if not user.is_verify_email:
                 return self.errUserResponse("", "邮箱未验证")
             re = user.check_password(request.data.get("password"))
