@@ -5,6 +5,8 @@ services:
   postgresql:
     image: docker.io/library/postgres:12-alpine
     restart: unless-stopped
+    ports:
+      - "55432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       start_period: 20s
@@ -37,6 +39,7 @@ services:
     image: ${AUTHENTIK_IMAGE:-authentik-usercenter}:${AUTHENTIK_TAG:-latest}
     restart: unless-stopped
     command: server
+    user: root
     environment:
       AUTHENTIK_REDIS__HOST: redis
       AUTHENTIK_POSTGRESQL__HOST: postgresql
@@ -47,6 +50,7 @@ services:
       JWT_ALGORITHM: ${JWT_ALGORITHM}
       API_TOKEN: ${API_TOKEN}
     volumes:
+      - ./local.env.yml:/local.env.yml
       - ./media:/media
       - ./custom-templates:/templates
     env_file:
@@ -73,6 +77,27 @@ services:
     # Removing `user: root` also prevents the worker from fixing the permissions
     # on the mounted folders, so when removing this make sure the folders have the correct UID/GID
     # (1000:1000 by default)
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./media:/media
+      - ./certs:/certs
+      - ./custom-templates:/templates
+    env_file:
+      - .env
+    depends_on:
+      - postgresql
+      - redis
+  celery:
+    image: ${AUTHENTIK_IMAGE:-authentik-usercenter}:${AUTHENTIK_TAG:-latest}
+    restart: unless-stopped
+    command: celery -A authentik.root.celery beat --loglevel=INFO
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
     user: root
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
