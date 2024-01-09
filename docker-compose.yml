@@ -83,6 +83,7 @@ services:
       - ./media:/media
       - ./certs:/certs
       - ./custom-templates:/templates
+      - ./local.env.yml:/local.env.yml
     env_file:
       - .env
     depends_on:
@@ -104,6 +105,7 @@ services:
       - ./media:/media
       - ./certs:/certs
       - ./custom-templates:/templates
+      - ./local.env.yml:/local.env.yml
     env_file:
       - .env
     depends_on:
