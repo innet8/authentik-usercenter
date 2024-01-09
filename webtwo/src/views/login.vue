@@ -307,7 +307,7 @@ const handleLogin = () => {
                 if (res.data == "needcode") {
                     onBlur()
                 }
-                if(res.code!='10'){
+                if (res.code != "10") {
                     message.error($t(res.msg))
                 }
                 if (res.code == "10") {
