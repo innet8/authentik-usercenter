@@ -84,7 +84,6 @@ services:
       - ./certs:/certs
       - ./custom-templates:/templates
       - ./local.env.yml:/local.env.yml
-      - geoip:/geoip
     env_file:
       - .env
     depends_on:
