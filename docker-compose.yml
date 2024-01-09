@@ -89,10 +89,10 @@ services:
     depends_on:
       - postgresql
       - redis
-  celerys:
+  worker-beat:
     image: ${AUTHENTIK_IMAGE:-authentik-usercenter}:${AUTHENTIK_TAG:-latest}
     restart: unless-stopped
-    command: "echo 1 && celery -A authentik.root.celery beat --loglevel=INFO"
+    command: worker-beat
     environment:
       AUTHENTIK_REDIS__HOST: redis
       AUTHENTIK_POSTGRESQL__HOST: postgresql

@@ -82,6 +82,9 @@ elif [[ "$1" == "worker-status" ]]; then
     wait_for_db
     celery -A authentik.root.celery flower \
         --port=9000
+elif [[ "$1" == "worker-beat" ]]; then
+    wait_for_db
+    celery -A authentik.root.celery beat --loglevel=INFO
 elif [[ "$1" == "bash" ]]; then
     /bin/bash
 elif [[ "$1" == "test-all" ]]; then
