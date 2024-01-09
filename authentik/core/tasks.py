@@ -5,7 +5,7 @@ from django.contrib.sessions.backends.cache import KEY_PREFIX
 from django.core.cache import cache
 from django.utils.timezone import now
 from structlog.stdlib import get_logger
-import subprocess
+import re
 from django.core import mail
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -85,11 +85,10 @@ def clean_temporary_users(self: MonitoredTask):
 @prefill_task
 def detection_password(self: MonitoredTask):
     """Sources"""
-    # DOTO 打个文件进行测试
-    subprocess.run("echo '1' > test.text", shell=True, capture_output=True, text=True)
     #
-    for user in User.objects.filter(password='', is_send_email=False):
-        if user.email:
+    pattern = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
+    for user in User.objects.filter(password='', is_send_email=False, username__contains='@'):
+        if user.email and re.match(pattern, user.email):
             source = user.path
             source_all = source
             if source == "pwf":
@@ -114,3 +113,7 @@ def detection_password(self: MonitoredTask):
                 if rq_num > 3:
                     user.is_send_email = True
                     user.save()
+        else:
+            user.is_send_email = True
+            user.save()
+
