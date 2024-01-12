@@ -741,8 +741,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def register(self, request: Request) -> Response:
         """用户注册"""
-        if self.limitRequest(request):
-            return self.errUserResponse("", "请勿频繁操作")
         if "username" not in request.data:
             return self.errUserResponse("", "账号不能为空")
         if cache.get("EmailLock::" + request.data.get("username")):
@@ -839,8 +837,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def login(self, request: Request) -> Response:
         """用户登录"""
-        if self.limitRequest(request):
-            return self.errUserResponse("", "请勿频繁操作")
         if "username" not in request.data:
             return self.errUserResponse("", "账号不能为空")
         if "password" not in request.data:
@@ -1410,7 +1406,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def limitRequest(self, request: Request):
         ip = request.META["HTTP_X_FORWARDED_FOR"]
         rq_num = cache.get(ip, 0)
-        cache.set(ip, rq_num + 1)
+        cache.set(ip, rq_num + 1,)
         if rq_num > 60:
             return True
         return False
