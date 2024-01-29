@@ -745,6 +745,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "账号不能为空")
         if cache.get("EmailLock::" + request.data.get("username")):
             return self.errUserResponse("", "请勿频繁操作，120s后再重新提交请求")
+        if len(request.data.get("username")) > 100:
+            return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
         pattern1 = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
         if not re.match(pattern1, request.data.get("username")):
             return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
@@ -752,7 +754,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "密码不能为空")
         pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
         if not re.match(pattern2, request.data.get("password")):
-            return self.errUserResponse("", "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
+            return self.errUserResponse("", "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
         if "source" not in request.data:
             return self.errUserResponse("", "来源不能为空")
 
@@ -806,6 +808,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     ),
                 )
                 if result == 1:
+                    cache.set("EmailLock::" + username, 1, 120)
                     return self.sucUserResponse("", "邮件发送成功")
                 else:
                     return self.errUserResponse("", "邮件发送失败")
@@ -887,7 +890,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     return self.errUserResponse("needcode", "账号或密码错误")
                 return self.errUserResponse("", "账号或密码错误")
         except User.DoesNotExist:
-            return self.errUserResponse("", "账号或密码错误")
+            return self.errUserResponse("", "账号不存在")
         except IntegrityError as exc:
             return self.errUserResponse("", str(exc))
 
@@ -1047,6 +1050,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """验证用户名"""
         if not username:
             return False, "账号不能为空"
+        if len(username) > 100:
+            return False, "账号必须为邮箱格式且最长100个字符"
         pattern = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
         if not re.match(pattern, username):
             return False, "账号必须为邮箱格式且最长100个字符"
@@ -1058,7 +1063,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return False, "新密码不能为空"
         pattern = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
         if not re.match(pattern, password):
-            return False, "6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上"
+            return False, "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上"
         return True, ""
 
     def dispatch_email(
@@ -1189,7 +1194,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "code不能为空")
         username = cache.get(code)
         if not username:
-            return self.errUserResponse("", "链接已失效，请重新提交请求")
+            # "链接已失效，请重新提交请求"
+            return Response('The link is no longer available, please resubmit the request', status=200)
         user = User.objects.filter(username=username).first()
         if user:
             return redirect(
@@ -1295,7 +1301,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         cache.set(md5_hash, username, 600)
 
         verification_link = (
-            CONFIG.get("app_url") + "/api/v3/core/users/sendRegisterEmailCode/?code=" + md5_hash
+            CONFIG.get("app_url") + "/api/v3/core/users/verifyRegisterEmail/?code=" + md5_hash
         )  # 消息内容
         result = mail.send_mail(
             subject="邮箱验证",  # 题目

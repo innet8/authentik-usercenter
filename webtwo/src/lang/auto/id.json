@@ -145,5 +145,7 @@
     "code不能为空": "kode tidak boleh kosong",
     "账号必须为邮箱格式": "Nomor rekening harus dalam format email",
     "用户不存在，请前往注册": "Pengguna tidak ada, silakan masuk untuk mendaftar",
-    "邮箱已验证，请直接登录": "Email sudah terverifikasi, silahkan langsung login"
+    "邮箱已验证，请直接登录": "Email sudah terverifikasi, silahkan langsung login",
+    "密码格式为:": "Format kata sandinya adalah:",
+    "密码:": "kata sandi:"
 }

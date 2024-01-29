@@ -59,7 +59,7 @@
                                 </n-input>
                             </n-form-item>
                             <div class="" v-if="loginType == 'regSuccess'">
-                                <p class="text-text-li text-16 font-normal">{{ $t('我们发送邮件至') }} <span
+                                <p class="text-text-li text-16 font-normal" style="word-break: break-all;">{{ $t('我们发送邮件至') }} <span
                                         class=" text-[#0C9189]">{{ formData.email }}</span>
                                     {{ $t('请点击我们刚刚发送到您收件箱的链接来确认您的电子邮件地址') }}</p>
                             </div>

@@ -145,5 +145,7 @@
     "code不能为空": "le code ne peut pas être vide",
     "账号必须为邮箱格式": "Le numéro de compte doit être au format email",
     "用户不存在，请前往注册": "L'utilisateur n'existe pas, veuillez vous inscrire",
-    "邮箱已验证，请直接登录": "L'e-mail a été vérifié, veuillez vous connecter directement"
+    "邮箱已验证，请直接登录": "L'e-mail a été vérifié, veuillez vous connecter directement",
+    "密码格式为:": "Le format du mot de passe est :",
+    "密码:": "mot de passe:"
 }
