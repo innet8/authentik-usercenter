@@ -89,7 +89,7 @@ class APILimitMiddleware:
         if api_path not in ("/api/v3/core/users/login/", "/api/v3/core/users/register/"):
             return response
 
-        ip_address = request.META.get("REMOTE_ADDR")
+        ip_address = request.META["HTTP_X_FORWARDED_FOR"]
         cache_key = f"api_request_limit:{ip_address}:{api_path}"
         request_count = cache.get(cache_key, 0)
         if request_count >= 60:

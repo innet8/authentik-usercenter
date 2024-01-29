@@ -867,11 +867,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             if re:
                 # 设置 JWT 的 payload 数据
                 payload = {
-                    "user_pk": user.pk,
                     "username": user.username,
                     "source": user.path,
-                    "exp": datetime.datetime.utcnow()
-                    + settings.JWT_EXPIRATION_DELTA,  # 设置过期时间为当前时间的一天后
+                    "exp": datetime.datetime.utcnow() + settings.JWT_EXPIRATION_DELTA,  # 设置过期时间为当前时间的一天后
                 }
                 token = jwt.encode(
                     payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM

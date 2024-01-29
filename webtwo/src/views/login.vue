@@ -270,8 +270,8 @@ const setLanguage = (e) => {
             let url = window.location.href;
             let urlObj = new URL(url);
             urlObj.searchParams.set('language', e);
-            let newUrl = urlObj.href;
-            window.location.href = newUrl;
+            window.parent?.postMessage({language: e}, "*");
+            window.location.href = urlObj.href;
         },
         onNegativeClick: () => {
 

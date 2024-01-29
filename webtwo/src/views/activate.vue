@@ -1,23 +1,28 @@
 <template >
     <div class="page-activate child-view">
         <div class="activate-body">
-            <div class="activate-box">
+            <div class="activate-box" v-if="!error">
                 <img class=" m-auto block rotate-image" src="@/statics/images/icon/loading-full.svg">
-                    <h3 class="text-32 font-semibold text-center text-text-li mt-40">{{ $t('激活账号中...') }}</h3>
-                    <p class="text-16 text-center text-text-li mt-16">{{ $t('账号激活中，请耐心等待，激活成功后页面自动刷新页面') }}</p>
+                <h3 class="text-32 font-semibold text-center text-text-li mt-40">{{ $t('激活账号中...') }}</h3>
+                <p class="text-16 text-center text-text-li mt-16">{{ $t('账号激活中，请耐心等待，激活成功后页面自动刷新页面') }}</p>
+            </div>
+            <div v-else class="activate-box" >
+                <h3 class="text-32 font-semibold text-center text-text-li mt-10">{{ error }}</h3>
             </div>
         </div>
     </div>
 </template>
+
 <script setup lang="ts">
 import { useRoute  } from 'vue-router';
 import { verifyRegisterEmail } from '@/api/modules/user';
 import { useMessage } from "@/utils/messageAll"
+
 const route = useRoute()
 const message = useMessage()
+const error = ref("")
 
 const handleActivate = () => {
-
     verifyRegisterEmail({
         code: route.query.code,
         language: route.query.language,
@@ -26,14 +31,13 @@ const handleActivate = () => {
         setTimeout(()=>{
             window.location.href = route.query.source_url.toString();
         },3000)
-    })
-        .catch(res => {
-            message.error($t(res.msg))
-        }).finally(() => {
-   
-        })
+    }).catch(res => {
+        error.value = $t(res.msg);
+    }).finally(() => {
 
+    })
 }
+
 onMounted(()=>{
     if(route.query.code){
         handleActivate()
@@ -41,6 +45,7 @@ onMounted(()=>{
 })
 
 </script>
+
 <style scoped>
 .page-activate {
     @apply bg-bg-login flex items-center;
@@ -48,15 +53,12 @@ onMounted(()=>{
 .activate-body {
     @apply flex items-center flex-col max-h-full overflow-hidden py-5 w-full;
 }
-
 .activate-box {
     @apply bg-bg-login-box shadow-login-box-Shadow rounded w-368 p-40 relative;
 }
-
 .rotate-image {
   animation: rotate 2s linear infinite; /* 设置动画名称、持续时间、速度和无限循环 */
 }
-
 @keyframes rotate {
   0% {
     transform: rotate(0deg); /* 设置初始位置，此处为 0 度 */
@@ -65,5 +67,4 @@ onMounted(()=>{
     transform: rotate(360deg); /* 设置结束位置，此处为 360 度 */
   }
 }
-
 </style>
