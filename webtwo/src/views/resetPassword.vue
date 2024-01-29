@@ -10,7 +10,7 @@
                 <transition name="login-mode">
                     <n-form ref="formRef" :rules="rules" label-placement="top" :show-require-mark="false" :model="formData">
                         <n-form-item :label="$t('设置密码')" path="password">
-                            <n-input type="password" v-model:value="formData.password" :placeholder="$t('设置新密码')" clearable>
+                            <n-input type="password" v-model:value="formData.password" :placeholder="$t('请设置新密码')" clearable>
                                 <template #prefix>
                                     <n-icon :component="LockClosed" />
                                 </template>

@@ -102,5 +102,13 @@
     "设置密码": "définir le mot de passe",
     "设置新密码": "Definir un nouveau mot de passe",
     "重置密码 ": "réinitialiser le mot de passe",
-    "重置成功！": "Réinitialisation réussie !"
+    "重置成功！": "Réinitialisation réussie !",
+    "登录到您的AK账号": "Connectez-vous à votre compte AK",
+    "创建您的AK账号": "Créez votre compte AK",
+    "平台已对账号系统进行了全面升级，请点击我们刚刚发送到您收件箱": "La plateforme a entièrement mis à niveau le système de compte, veuillez cliquer et nous venons de l'envoyer dans votre boîte de réception",
+    "的链接来重新设置登录密码": "lien pour réinitialiser votre mot de passe de connexion",
+    "重新发送邮件": "Ré-envoyer l'email",
+    "忘记密码?": "oublié le mot de passe ?",
+    "請輸入郵箱地址": "Veuillez saisir l'adresse e-mail",
+    "请设置新密码": "Veuillez définir un nouveau mot de passe"
 }
