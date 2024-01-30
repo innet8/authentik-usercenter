@@ -34,7 +34,7 @@
                                 </n-input>
                             </n-form-item>
                             <n-form-item :label="$t('验证码')" path="code" v-if="codeNeed">
-                                <n-input class="code-load-input" v-model:value="code" :placeholder="$t('输入图形验证码')"
+                                <n-input class="code-load-input" v-model:value="formData.code" :placeholder="$t('输入图形验证码')" maxlength="5"
                                     clearable>
                                     <template #prefix>
                                         <n-icon :component="CheckmarkCircleOutline" />
@@ -150,7 +150,6 @@ import webTs from "@/utils/web"
 const message = useMessage()
 const route = useRoute()
 const loadIng = ref<boolean>(false)
-const code = ref("")
 const codeUrl = ref("")
 const codeLoad = ref(0)
 const userState = UserStore()
@@ -166,6 +165,7 @@ const formData = ref({
     password: "",
     confirmPassword: "",
     invite: "",
+    code: "",
 })
 
 const options = ref([
@@ -217,11 +217,13 @@ const rules = ref({
             if (!value) {
                 return new Error(loginType.value == 'forgot' ? $t('請輸入郵箱地址') : $t('请输入账号'))
             }
-            // else if (!utils.isEmail(value)) {
-            //     return new Error($t('请输入正确的邮箱'))
-            // }
             return true
         },
+        trigger: ['input', 'blur']
+    },
+    code: {
+        required: true,
+        message: $t('请输入验证码'),
         trigger: ['input', 'blur']
     },
     password: {
@@ -291,7 +293,7 @@ const handleLogin = () => {
             email: formData.value.email,
             username: formData.value.email,
             password: formData.value.password,
-            pic_code: code.value,
+            pic_code: formData.value.code,
             source_url: config.value.sourceUrl || '',
         }).then(({ data, msg }) => {
             userState.info = data
@@ -302,19 +304,20 @@ const handleLogin = () => {
                 parent.window.location.href = parent.window.location.origin + `/page/success?language=${config.value.language}&ak-token=${data.token}`
             }
         })
-            .catch(res => {
-                loadIng.value = false
-                if (res.data == "needcode") {
-                    onBlur()
-                }
-                if (res.code != "10") {
-                    message.error($t(res.msg))
-                }
-                if (res.code == "10") {
-                    loginType.value = 'secure'
-                    handleReset();
-                }
-            })
+        .catch(res => {
+            loadIng.value = false
+            refreshCode()
+            if (res.data == "needcode") {
+                onBlur()
+            }
+            if (res.code != "10") {
+                message.error($t(res.msg))
+            }
+            if (res.code == "10") {
+                loginType.value = 'secure'
+                handleReset();
+            }
+        })
     }).catch(_ => { })
 }
 
@@ -417,13 +420,15 @@ const onBlur = () => {
     const upData = {
         username: formData.value.email,
     }
-    needCode(upData)
-        .then(({ data }) => {
-            if (data == 'y') {
-                codeNeed.value = true
-                codeUrl.value = webTs.apiUrl(`/api/v3/core/users/picCode/?username=${formData.value.email}`)
-            }
-        })
+    needCode(upData).then(({ data }) => {
+        if (data == 'y') {
+            codeNeed.value = true
+            codeUrl.value = webTs.apiUrl(`/api/v3/core/users/picCode/?username=${formData.value.email}`)
+        } else {
+            codeNeed.value = false
+            codeUrl.value = ""
+        }
+    })
 }
 
 // 刷新验证码
