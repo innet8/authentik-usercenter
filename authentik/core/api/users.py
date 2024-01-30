@@ -1218,7 +1218,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "用户不存在")
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
-    def getInfo(self, request: Request) -> Response:
+    def get_info(self, request: Request) -> Response:
         """Decode token to getUser"""
         if "token" not in request.data:
             return self.errUserResponse("", "令牌不能为空")
@@ -1271,11 +1271,20 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "用户不存在")
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
-    def getList(self, request: Request) -> Response:
+    def get_list(self, request: Request) -> Response:
         """获取用户列表"""
         if not self.check_api_token(request):
             return self.errUserResponse("", "INVALID TOKENk")
-        users = User.objects.filter(type="external").values(
+
+        Userdb = User.objects.filter(type="external")
+
+        if "emails" in request.data:
+            if len(request.data.get("emails")) > 1000:
+                return self.errUserResponse("", "emails参数不能大于1000")
+            if len(request.data.get("emails")) > 0:
+                Userdb = Userdb.filter(email__in=request.data.get("emails"))
+
+        users = Userdb.values(
                 "id",
                 "username",
                 "last_login",
@@ -1291,8 +1300,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 "path",
                 "is_verify_email",
             )
-        page_number = request.GET.get('page',1)
-        page_size = request.GET.get('page_size', 100)
+        page_number = request.data.get("page",1)
+        page_size = request.data.get("page_size",100)
         user_data = list( Paginator(users, per_page=page_size).get_page(int(page_number)) )
         return self.sucUserResponse(user_data)
 

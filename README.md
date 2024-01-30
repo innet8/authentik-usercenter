@@ -99,7 +99,7 @@ API_TOKEN=                # API密钥（填写随机字符串）
 
 #### 解析Token获取用户信息接口
 
-地址 http://127.0.0.1:9000/api/v3/core/users/getInfo/
+地址 http://127.0.0.1:9000/api/v3/core/users/get_info/
 
 请求方式 POST
 
@@ -132,7 +132,7 @@ API_TOKEN=                # API密钥（填写随机字符串）
 
 #### 获取用户列表
 
-地址 http://127.0.0.1:9000/api/v3/core/users/getList/
+地址 http://127.0.0.1:9000/api/v3/core/users/get_list/
 
 请求方式 POST
 
