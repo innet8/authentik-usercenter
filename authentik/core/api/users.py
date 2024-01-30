@@ -98,6 +98,7 @@ from authentik.stages.email.models import EmailStage
 from authentik.stages.email.tasks import send_mails
 from authentik.stages.email.utils import TemplateEmailMessage
 from authentik.tenants.models import Tenant
+from django.core.paginator import Paginator
 
 LOGGER = get_logger()
 
@@ -752,6 +753,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
         if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
+
+        print(CONFIG.get("business")[0]['desc'])
+        print(CONFIG.get("business")[0]['api_token'])
+        print(CONFIG.get("business")[0]['notif_url'])
+
         pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
         if not re.match(pattern2, request.data.get("password")):
             return self.errUserResponse("", "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
@@ -1144,9 +1150,12 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
     def check_api_token(self, request: Request) -> bool:
         """检查API令牌是否有效"""
-        return (
-            "HTTP_APITOKEN" in request.META and request.META["HTTP_APITOKEN"] == settings.API_TOKEN
-        )
+
+        if "HTTP_APITOKEN" in request.META:
+            apitoken = request.META["HTTP_APITOKEN"]
+            if any(token_dict["api_token"] == apitoken for token_dict in CONFIG.get("business")):
+                return True
+        return False
 
     def check_token(self, token: str) -> tuple[bool, str or User]:
         """检测令牌"""
@@ -1231,35 +1240,83 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         return self.sucUserResponse(decoded_payload)
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def get_user_info(self, request: Request) -> Response:
+        """Decode token to getUser"""
+        if not self.check_api_token(request):
+            return self.errUserResponse("", "INVALID TOKENk")
+
+        if "email" not in request.data:
+            return self.errUserResponse("", "参数错误")
+
+        user = User.objects.filter(email=request.data.get("email"), type="external").first()
+        if user:
+            data = {
+                "id": user.id,
+                "last_login": user.last_login,
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "is_active": user.is_active,
+                "date_joined": user.date_joined,
+                "uuid": user.uuid,
+                "name": user.name,
+                "password_change_date": user.password_change_date,
+                "attributes": user.attributes,
+                "path": user.path,
+                "is_verify_email": user.is_verify_email
+            }
+            return self.sucUserResponse(data)
+        else:
+            return self.errUserResponse("", "用户不存在")
+
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def getList(self, request: Request) -> Response:
         """获取用户列表"""
-        if "HTTP_APITOKEN" in request.META and request.META["HTTP_APITOKEN"] == settings.API_TOKEN:
-            users = User.objects.filter(type="external").values("username")
-            user_data = list(users)
-            return self.sucUserResponse(user_data)
-        else:
+        if not self.check_api_token(request):
             return self.errUserResponse("", "INVALID TOKENk")
+        users = User.objects.filter(type="external").values(
+                "id",
+                "username",
+                "last_login",
+                "first_name",
+                "last_name",
+                "email",
+                "is_active",
+                "date_joined",
+                "uuid",
+                "name",
+                "password_change_date",
+                "attributes",
+                "path",
+                "is_verify_email",
+            )
+        page_number = request.GET.get('page',1)
+        page_size = request.GET.get('page_size', 100)
+        user_data = list( Paginator(users, per_page=page_size).get_page(int(page_number)) )
+        return self.sucUserResponse(user_data)
+
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def updateEmailVerify(self, request: Request) -> Response:
         """更改用户邮箱验证状态"""
-        if "HTTP_APITOKEN" in request.META and request.META["HTTP_APITOKEN"] == settings.API_TOKEN:
-            if "username" not in request.data:
-                return self.errUserResponse("", "账号不能为空")
-            if "is_verify_email" not in request.data:
-                return self.errUserResponse("", "验证状态不能为空")
-
-            user = User.objects.filter(
-                username=request.data.get("username"), type="external"
-            ).first()
-            if user:
-                user.is_verify_email = True if request.data.get("is_verify_email") == 1 else False
-                user.save()
-                return self.sucUserResponse("", "修改成功")
-            else:
-                return self.errUserResponse("", "用户不存在")
-        else:
+        if not self.check_api_token(request):
             return self.errUserResponse("", "INVALID TOKENk")
+
+        if "username" not in request.data:
+            return self.errUserResponse("", "账号不能为空")
+        if "is_verify_email" not in request.data:
+            return self.errUserResponse("", "验证状态不能为空")
+
+        user = User.objects.filter(
+            username=request.data.get("username"), type="external"
+        ).first()
+        if user:
+            user.is_verify_email = True if request.data.get("is_verify_email") == 1 else False
+            user.save()
+            return self.sucUserResponse("", "修改成功")
+        else:
+            return self.errUserResponse("", "用户不存在")
 
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def verifyRegisterEmail(self, request: Request) -> Response:

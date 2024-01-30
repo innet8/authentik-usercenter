@@ -463,4 +463,3 @@ JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM")
 JWT_EXPIRATION_DELTA = datetime.timedelta(days=1)
 
-API_TOKEN = os.environ.get("API_TOKEN")
