@@ -1022,6 +1022,29 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         return True, "验证成功"
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def force_reset_password(self, request: Request) -> Response:
+        """重置密码"""
+        if not self.check_api_token(request):
+            return self.errUserResponse("", "INVALID TOKENk")
+
+        if "password" not in request.data:
+            return self.errUserResponse("", "参数错误")
+
+        username = request.data.get("username")
+        password = request.data.get("password")
+        pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
+        if not re.match(pattern2, password):
+            return self.errUserResponse("", "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return self.errUserResponse("", "账号不存在")
+        user.set_password(password)
+        user.save()
+        return self.sucUserResponse("", "密码已成功重置")
+
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def reset_password(self, request: Request) -> Response:
         """重置密码"""
         step = request.data.get("step")
