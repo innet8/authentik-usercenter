@@ -26,7 +26,6 @@ from django.urls import reverse_lazy
 from django.utils.http import urlencode
 from django.utils.text import slugify
 from django.utils.timezone import now
-from django.utils.translation import get_language
 from django.utils.translation import gettext as _
 from django_filters.filters import (
     BooleanFilter,
@@ -746,6 +745,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def register(self, request: Request) -> Response:
         """用户注册"""
+
         if "username" not in request.data:
             return self.errUserResponse("", "账号不能为空")
         if cache.get("EmailLock::" + request.data.get("username")):
@@ -807,14 +807,22 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     + "&source_url="
                     + source_url
                 )  # 消息内容
+
+                lang = request.META.get('HTTP_LANGUAGE');
+                subject = "Mailbox verification"
+                if lang == 'zh-cn' or lang == 'zh' :
+                    subject = "邮箱验证"
+                if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
+                    subject = "郵箱驗證"
+
                 result = mail.send_mail(
-                    subject="邮箱验证",  # 题目
+                    subject=subject,  # 题目
                     message="注册验证",
                     from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
                     recipient_list=[username],  # 接收者邮件列表
                     html_message=render_to_string(
                         "email/verify_email.html",
-                        {"username": username, "verification_link": verification_link},
+                        {"username": username, "verification_link": verification_link, "language": lang},
                     ),
                 )
                 if result == 1:
@@ -969,7 +977,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             old_email_code = request.data.get("code")
             if not old_email_code:
                 is_sent, message, sign = self.dispatch_email(
-                    user.username, "original_email", get_language(), ""
+                    user.username, "original_email", request.META.get('HTTP_LANGUAGE') , ""
                 )
                 cache.set("update_email::" + user.username + sign, 1, 30 * 60)
                 if is_sent:
@@ -996,7 +1004,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return self.errUserResponse("", message)
             if not new_email_code:
                 is_sent, message, _ = self.dispatch_email(
-                    new_email, "new_email", get_language(), ""
+                    new_email, "new_email", request.META.get('HTTP_LANGUAGE'), ""
                 )
                 if is_sent:
                     return self.sucUserResponse("", message)
@@ -1052,7 +1060,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if step == 1:
             username = request.data.get("username")
             is_sent, message, _ = self.dispatch_email(
-                username, "retrieve_password", get_language(), source_url
+                username, "retrieve_password", request.META.get('HTTP_LANGUAGE'), source_url
             )
             if is_sent:
                 return self.sucUserResponse("", message)
@@ -1117,21 +1125,33 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             except User.DoesNotExist:
                 return False, "账号不存在", ""
 
+        subject = "Reset your password"
+        subject_two = "Change your email address"
+        subject_three = "Enable your mailbox"
+        if lang == 'zh-cn' or lang == 'zh' :
+            subject = "重置您的密码"
+            subject_two = "更改您的邮箱"
+            subject_three = "启用您的邮箱"
+        if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
+            subject = "重設您的密碼"
+            subject_two = "更改您的郵箱"
+            subject_three = "啟用您的郵箱"
+
         email_config = {
             "retrieve_password": {
-                "subject": "重置您的密码",
+                "subject": subject,
                 "template": "email/retrieve_password.html",
                 "success_text": "邮件下发成功，请前往邮箱进行重置密码",
                 "token": str(default_token_generator.make_token(user)) if user else "",
             },
             "original_email": {
-                "subject": "更改您的邮箱",
+                "subject": subject_two,
                 "template": "email/original_email.html",
                 "success_text": "邮件发送成功",
                 "token": "".join(str(random.randint(0, 9)) for _ in range(6)),
             },
             "new_email": {
-                "subject": "启用您的邮箱",
+                "subject": subject_three,
                 "template": "email/new_email.html",
                 "success_text": "邮件发送成功",
                 "token": "".join(str(random.randint(0, 9)) for _ in range(6)),
@@ -1396,14 +1416,22 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         verification_link = (
             CONFIG.get("app_url") + "/api/v3/core/users/verifyRegisterEmail/?code=" + md5_hash
         )  # 消息内容
+
+        lang = request.META.get('HTTP_LANGUAGE');
+        subject = "Mailbox verification"
+        if lang == 'zh-cn' or lang == 'zh' :
+            subject = "邮箱验证"
+        if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
+            subject = "郵箱驗證"
+
         result = mail.send_mail(
-            subject="邮箱验证",  # 题目
-            message="注册验证",
+            subject = subject,  # 题目
+            message = "注册验证",
             from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
             recipient_list=[username],  # 接收者邮件列表
             html_message=render_to_string(
                 "email/verify_email.html",
-                {"username": username, "verification_link": verification_link},
+                {"username": username, "verification_link": verification_link, "language": lang},
             ),
         )
         if result == 1:
