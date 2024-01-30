@@ -540,6 +540,10 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """Set password for user"""
         user: User = self.get_object()
         try:
+            print(request.data.get("password"))
+            pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
+            if not re.match(pattern2, request.data.get("password")):
+                return Response({"password": ["密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上"]}, status=400)
             user.set_password(request.data.get("password"))
             user.save()
         except (ValidationError, IntegrityError) as exc:
