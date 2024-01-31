@@ -147,5 +147,6 @@
     "用户不存在，请前往注册": "Pengguna tidak ada, silakan masuk untuk mendaftar",
     "邮箱已验证，请直接登录": "Email sudah terverifikasi, silahkan langsung login",
     "密码格式为:": "Format kata sandinya adalah:",
-    "密码:": "kata sandi:"
+    "密码:": "kata sandi:",
+    "请输入验证码": "silakan masukkan kode verifikasi"
 }

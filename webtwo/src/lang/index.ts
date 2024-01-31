@@ -19,7 +19,7 @@ const i18n = createI18n({
         id: { ...auto_id },
         ja: { ...auto_ja },
         ko: { ...auto_ko },
-        "zh-CHT": { ...auto_zhHant },
+        tc: { ...auto_zhHant },
     },
     warnHtmlMessage: false,
 })

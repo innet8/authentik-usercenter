@@ -147,5 +147,6 @@
     "用户不存在，请前往注册": "The user does not exist, please go to register",
     "邮箱已验证，请直接登录": "Email has been verified, please log in directly",
     "密码格式为:": "The password format is:",
-    "密码:": "password:"
+    "密码:": "password:",
+    "请输入验证码": "please enter verification code"
 }
