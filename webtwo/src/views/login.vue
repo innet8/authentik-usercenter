@@ -17,7 +17,7 @@
                             </div>
                             <n-form-item :label="$t('邮箱')" path="email"
                                 v-if="loginType == 'reg' || loginType == 'login' || loginType == 'forgot'">
-                                <n-input v-model:value="formData.email" @blur="onBlur" :placeholder="loginType == 'forgot' ? $t('請輸入郵箱地址') : $t('请输入用户账号')"
+                                <n-input v-model:value="formData.email" @blur="onBlur" :maxlength="100" :placeholder="loginType == 'forgot' ? $t('請輸入郵箱地址') : $t('请输入用户账号')"
                                     clearable>
                                     <template #prefix>
                                         <n-icon :component="Mail" />
@@ -26,7 +26,7 @@
                             </n-form-item>
                             <n-form-item :label="$t('密码')" path="password"
                                 v-if="loginType == 'reg' || loginType == 'login'">
-                                <n-input type="password" v-model:value="formData.password" @blur="onBlur"
+                                <n-input type="password" v-model:value="formData.password" @blur="onBlur" :maxlength="24"
                                     :placeholder="$t('请输入登录密码')" clearable>
                                     <template #prefix>
                                         <n-icon :component="LockClosed" />
@@ -34,7 +34,7 @@
                                 </n-input>
                             </n-form-item>
                             <n-form-item :label="$t('验证码')" path="code" v-if="codeNeed">
-                                <n-input class="code-load-input" v-model:value="formData.code" :placeholder="$t('输入图形验证码')" maxlength="5"
+                                <n-input class="code-load-input" v-model:value="formData.code" :placeholder="$t('输入图形验证码')" :maxlength="5"
                                     clearable>
                                     <template #prefix>
                                         <n-icon :component="CheckmarkCircleOutline" />
@@ -51,7 +51,7 @@
                                 </n-input>
                             </n-form-item>
                             <n-form-item :label="$t('确认密码')" path="confirmPassword" v-if="loginType == 'reg'">
-                                <n-input type="password" v-model:value="formData.confirmPassword"
+                                <n-input type="password" v-model:value="formData.confirmPassword" :maxlength="24"
                                     :placeholder="$t('输入确认密码')" clearable>
                                     <template #prefix>
                                         <n-icon :component="LockClosed" />
