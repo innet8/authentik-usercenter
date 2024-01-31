@@ -4,6 +4,7 @@ import datetime
 import hashlib
 import random
 import re
+import uuid
 from datetime import timedelta
 from io import BytesIO
 from json import loads
@@ -98,6 +99,7 @@ from authentik.stages.email.tasks import send_mails
 from authentik.stages.email.utils import TemplateEmailMessage
 from authentik.tenants.models import Tenant
 from django.core.paginator import Paginator
+
 
 LOGGER = get_logger()
 
@@ -758,10 +760,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
 
-        print(CONFIG.get("business")[0]['desc'])
-        print(CONFIG.get("business")[0]['api_token'])
-        print(CONFIG.get("business")[0]['notif_url'])
-
         pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
         if not re.match(pattern2, request.data.get("password")):
             return self.errUserResponse("", "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
@@ -965,69 +963,96 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """更新邮箱"""
         if not self.check_api_token(request):
             return self.errUserResponse("", "INVALID TOKENk")
-        step = request.data.get("step")
 
+        step = request.data.get("step", 1)
+        sign = request.data.get("sign")
         username = request.data.get("username")
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return self.errUserResponse("", "账号不存在")
+        new_email = request.data.get("new_email")
+        email_code = request.data.get("code")
+        language = request.META.get('HTTP_LANGUAGE')
 
+        # 发送验证码
         if step == 1:
-            old_email_code = request.data.get("code")
-            if not old_email_code:
-                is_sent, message, sign = self.dispatch_email(
-                    user.username, "original_email", request.META.get('HTTP_LANGUAGE') , ""
-                )
-                cache.set("update_email::" + user.username + sign, 1, 30 * 60)
-                if is_sent:
-                    return self.sucUserResponse({"sign": sign}, message)
-                else:
-                    return self.errUserResponse("", message)
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return self.errUserResponse("", "账号不存在")
+
+            is_sent, message = self.dispatch_email(user.username, "original_email", language, "")
+            if is_sent:
+                return self.sucUserResponse({
+                    "step": step,
+                    "sign": self.generate_sign(user.username, str(step))
+                })
             else:
-                is_valid_code, message = self.verify_dispatch_email_code(
-                    user.username, old_email_code
-                )
-                if not is_valid_code:
-                    return self.errUserResponse("", message)
-                cache.delete(old_email_code)
-                return self.sucUserResponse({"step": 2}, "验证成功")
-        elif step == 2:
-            sign = request.data.get("sign")
-            new_email = request.data.get("new_email")
-            new_email_code = request.data.get("code")
-            is_valid_username, msg = self.validate_username(new_email)
-            if not is_valid_username:
-                return self.errUserResponse("", msg)
-            is_valid_sign, message = self.verify_sign(user.username, sign)
-            if not is_valid_sign:
                 return self.errUserResponse("", message)
-            if not new_email_code:
-                is_sent, message, _ = self.dispatch_email(
-                    new_email, "new_email", request.META.get('HTTP_LANGUAGE'), ""
-                )
-                if is_sent:
-                    return self.sucUserResponse("", message)
-                else:
-                    return self.errUserResponse("", message)
+
+        # 验证验证码
+        if step == 2:
+            is_valid_sign, message_or_username = self.verify_sign(sign, str(step-1))
+            if not is_valid_sign:
+                return self.errUserResponse("", message_or_username)
+
+            is_valid_code, msg = self.verify_dispatch_email_code(message_or_username, str(email_code))
+            if not is_valid_code:
+                return self.errUserResponse("", msg)
+
+            return self.sucUserResponse({
+                "step": step,
+                "sign": self.generate_sign(message_or_username, str(step))
+            }, "验证成功")
+
+        # 发送新邮箱的验证码
+        if step == 3:
+            is_valid_sign, message_or_username = self.verify_sign(sign, str(step-1))
+            if not is_valid_sign:
+                return self.errUserResponse("", message_or_username)
+
+            is_sent, message = self.dispatch_email(new_email, "new_email", language, "")
+            if is_sent:
+                return self.sucUserResponse({
+                    "step": step,
+                    "sign": self.generate_sign(message_or_username, str(step))
+                }, message)
             else:
-                is_valid_code, message = self.verify_dispatch_email_code(new_email, new_email_code)
-                if not is_valid_code:
-                    return self.errUserResponse("", message)
-                user.username = user.email = user.name = new_email
-                user.save()
-                cache.delete(sign)
-                return self.sucUserResponse("", "更新邮箱成功")
+                return self.errUserResponse("", message)
+
+        #更改
+        if step == 4:
+            is_valid_sign, message_or_username = self.verify_sign(sign, str(step-1))
+            if not is_valid_sign:
+                return self.errUserResponse("", message_or_username)
+
+            is_valid_code, msg = self.verify_dispatch_email_code(new_email, str(email_code))
+            if not is_valid_code:
+                return self.errUserResponse("", msg)
+
+            try:
+                user = User.objects.get(username=message_or_username)
+            except User.DoesNotExist:
+                return self.errUserResponse("", "账号不存在")
+
+            user.username = user.email = user.name = new_email
+            user.save()
+            return self.sucUserResponse({ "step": step }, "更新邮箱成功")
+
         else:
             return self.errUserResponse("", "无效操作")
 
-    def verify_sign(self, username: str, sign: str) -> tuple[bool, str]:
+    def generate_sign(self, username: str, step: str) -> tuple[str]:
         """验证签名"""
+        sign = hashlib.md5( (step + str(uuid.uuid4())).encode() ).hexdigest()
+        cache.set("sign_email::" + sign + step, username, 30 * 60)
+        return sign
+
+    def verify_sign(self, sign: str, step: str) -> tuple[bool, str]:
+        """验证签名"""
+        username = cache.get("sign_email::" + sign + step)
         if not sign:
             return False, "无效签名"
-        if not cache.get("update_email::" + username + sign):
+        if not username:
             return False, "无效请求"
-        return True, "验证成功"
+        return True, username
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def force_reset_password(self, request: Request) -> Response:
@@ -1059,7 +1084,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         source_url = request.data.get("source_url", "")
         if step == 1:
             username = request.data.get("username")
-            is_sent, message, _ = self.dispatch_email(
+            is_sent, message = self.dispatch_email(
                 username, "retrieve_password", request.META.get('HTTP_LANGUAGE'), source_url
             )
             if is_sent:
@@ -1107,23 +1132,21 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return False, "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上"
         return True, ""
 
-    def dispatch_email(
-        self, username: str, key: str, lang: str, source_url: str
-    ) -> tuple[bool, str, str]:
+    def dispatch_email( self, username: str, key: str, lang: str, source_url: str) -> tuple[bool, str]:
         """邮件发送：找回密码(retrieve_password)、更改邮箱(original_email)、启用邮箱(new_email)"""
         is_valid_username, msg = self.validate_username(username)
         if not is_valid_username:
-            return False, msg, ""
+            return False, msg
 
         if cache.get("EmailLock::" + username):
-            return False, "请勿频繁操作，120s后再重新提交请求", ""
+            return False, "请勿频繁操作，120s后再重新提交请求"
 
         user = None
         if key == "retrieve_password":
             try:
                 user = User.objects.get(username=username)
             except User.DoesNotExist:
-                return False, "账号不存在", ""
+                return False, "账号不存在"
 
         subject = "Reset your password"
         subject_two = "Change your email address"
@@ -1159,7 +1182,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         }
 
         if key not in email_config:
-            return False, "无效的邮件类型", ""
+            return False, "无效的邮件类型"
 
         config = email_config[key]
         token = config["token"]
@@ -1191,9 +1214,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         )
         if result == 1:
             cache.set("EmailLock::" + username, 1, 120)
-            return True, config["success_text"], md5_hash
+            return True, config["success_text"]
         else:
-            return False, "邮件发送失败", ""
+            return False, "邮件发送失败"
 
     def check_api_token(self, request: Request) -> bool:
         """检查API令牌是否有效"""
