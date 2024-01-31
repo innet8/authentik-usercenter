@@ -138,7 +138,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from "vue"
+import { ref, computed  } from "vue"
 import { userLogin, userReg, resend, needCode, resetPassword } from "@/api/modules/user"
 import { FormItemRule, useDialog } from "naive-ui"
 import { useMessage } from "@/utils/messageAll"
@@ -435,6 +435,8 @@ const onBlur = () => {
 const refreshCode = () => {
     codeUrl.value = webTs.apiUrl(`/api/v3/core/users/picCode/?username=${formData.value.email}&_='` + Math.random())
 }
+
+
 </script>
 
 <style lang="less" scoped>
@@ -476,7 +478,7 @@ const refreshCode = () => {
             }
 
             .login-title {
-                @apply text-30 font-semibold text-center mt-40;
+                @apply md:text-30 text-24 font-semibold text-center mt-40;
             }
 
             .login-subtitle {
@@ -488,7 +490,7 @@ const refreshCode = () => {
             }
 
             .login-access {
-                @apply mt-32 mx-40 mb-40;
+                @apply mt-32 md:mx-40 mx-24 md:mb-40 mb-24;
 
                 .n-input {
                     transition: all 0s;
