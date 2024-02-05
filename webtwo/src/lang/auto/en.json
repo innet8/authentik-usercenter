@@ -148,5 +148,7 @@
     "邮箱已验证，请直接登录": "Email has been verified, please log in directly",
     "密码格式为:": "The password format is:",
     "密码:": "password:",
-    "请输入验证码": "please enter verification code"
+    "请输入验证码": "please enter verification code",
+    "6~24位，支持大小写": "6~24 bits, upper and lower case supported",
+    "密码: 6~24位，支持大小写 字母、数字、英文特殊字符，需包含2种类型以上": "Password: 6~24 characters, supports uppercase and lowercase letters, numbers, and English special characters, and must contain more than 2 types"
 }
