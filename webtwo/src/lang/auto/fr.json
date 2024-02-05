@@ -150,5 +150,5 @@
     "密码:": "mot de passe:",
     "请输入验证码": "veuillez entrer le code de vérification",
     "6~24位，支持大小写": "6 ~ 24 bits, majuscules et minuscules prises en charge",
-    "密码: 6~24位，支持大小写 字母、数字、英文特殊字符，需包含2种类型以上": "Mot de passe : 6 à 24 caractères, prend en charge les lettres majuscules et minuscules, les chiffres et les caractères spéciaux anglais, et doit contenir plus de 2 types"
+    "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上": "Mot de passe : 6 à 24 caractères, prend en charge les lettres majuscules et minuscules, les chiffres et les caractères spéciaux anglais, et doit contenir plus de 2 types"
 }
