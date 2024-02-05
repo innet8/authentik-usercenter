@@ -1195,6 +1195,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             + md5_hash
             + "&source_url="
             + source_url
+            + "&lang="
+            + lang
         )
 
         html_message = render_to_string(
@@ -1269,12 +1271,19 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """验证忘记密码链接"""
         code = request.query_params.get("code")
         source_url = request.query_params.get("source_url")
+        lang = request.query_params.get("lang")
         if not code:
             return self.errUserResponse("", "code不能为空")
         username = cache.get(code)
+        username = ""
         if not username:
             # "链接已失效，请重新提交请求"
+            if lang == 'zh-cn' or lang == 'zh' :
+                return Response('链接已失效，请重新提交请求', status=200)
+            if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
+                return Response('链接已失效，请重新提交请求', status=200)
             return Response('The link is no longer available, please resubmit the request', status=200)
+
         user = User.objects.filter(username=username).first()
         if user:
             return redirect(
