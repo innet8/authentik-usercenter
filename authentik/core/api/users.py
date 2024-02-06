@@ -1279,7 +1279,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if not code:
             return self.errUserResponse("", "code不能为空")
         username = cache.get(code)
-        username = ""
         if not username:
             # "链接已失效，请重新提交请求"
             if lang == 'zh-cn' or lang == 'zh' :
