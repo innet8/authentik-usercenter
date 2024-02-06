@@ -1278,8 +1278,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def verify_retrieve_password(self, request: Request) -> Response:
         """验证忘记密码链接"""
         code = request.query_params.get("code")
-        source_url = request.query_params.get("source_url")
         lang = request.query_params.get("lang")
+        source_url = request.query_params.get("source_url")
         if not code:
             return self.errUserResponse("", "code不能为空")
         username = cache.get(code)
@@ -1299,6 +1299,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 + code
                 + "&source_url="
                 + source_url
+                + "&language="
+                + lang
             )
         else:
             return self.errUserResponse("", "用户不存在")
