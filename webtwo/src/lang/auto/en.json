@@ -156,5 +156,6 @@
     "请输入邮箱地址": "Please enter your email address.",
     "平台已对账号系统进行了全面升级": "The platform has completed a comprehensive upgrade of the account system.",
     "请点击我们刚刚发送到您收件箱": "Please click on the link we just sent to your email inbox",
-    "请勿频繁操作": "Do not operate frequently"
+    "请勿频繁操作": "Do not operate frequently",
+    "新密码不能为空": "New password cannot be empty"
 }
