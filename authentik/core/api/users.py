@@ -1056,7 +1056,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """验证签名"""
         username = cache.get("sign_email::" + sign + step)
         if not sign:
-            return False, "无效签名"
+            return False, "验证码错误"
         if not username:
             return False, "无效请求"
         return True, username
