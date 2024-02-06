@@ -1156,8 +1156,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return False, "账号不存在"
 
         subject = "Reset your password"
-        subject_two = "Change your email address"
-        subject_three = "Enable your mailbox"
+        subject_two = "Update your email"
+        subject_three = "Activate your email"
         if lang == 'zh-cn' or lang == 'zh' :
             subject = "重置您的密码"
             subject_two = "更改您的邮箱"
