@@ -1012,6 +1012,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             if not is_valid_sign:
                 return self.errUserResponse("", message_or_username)
 
+            if User.objects.filter(username=new_email).exists():
+                return self.errUserResponse("", "邮箱已存在")
+
             is_sent, message = self.dispatch_email(new_email, "new_email", language, "")
             if is_sent:
                 return self.sucUserResponse({
@@ -1071,7 +1074,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """验证签名"""
         username = cache.get("sign_email::" + sign + step)
         if not sign:
-            return False, "无效签名"
+            return False, "验证码错误"
         if not username:
             return False, "无效请求"
         return True, username
@@ -1171,8 +1174,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return False, "账号不存在"
 
         subject = "Reset your password"
-        subject_two = "Change your email address"
-        subject_three = "Enable your mailbox"
+        subject_two = "Update your email"
+        subject_three = "Activate your email"
         if lang == 'zh-cn' or lang == 'zh' :
             subject = "重置您的密码"
             subject_two = "更改您的邮箱"
@@ -1284,6 +1287,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if not val:
             return False, "验证码已失效，请重新获取"
         if username == val:
+            cache.set(md5_hash, "", 600)
             return True, "验证成功"
         else:
             return False, "验证码错误"
@@ -1292,12 +1296,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def verify_retrieve_password(self, request: Request) -> Response:
         """验证忘记密码链接"""
         code = request.query_params.get("code")
-        source_url = request.query_params.get("source_url")
         lang = request.query_params.get("lang")
+        source_url = request.query_params.get("source_url") + "?lang=" + lang
         if not code:
             return self.errUserResponse("", "code不能为空")
         username = cache.get(code)
-        username = ""
         if not username:
             # "链接已失效，请重新提交请求"
             if lang == 'zh-cn' or lang == 'zh' :
@@ -1314,6 +1317,8 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 + code
                 + "&source_url="
                 + source_url
+                + "&language="
+                + lang
             )
         else:
             return self.errUserResponse("", "用户不存在")

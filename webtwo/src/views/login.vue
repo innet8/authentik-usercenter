@@ -334,6 +334,18 @@ const handleReg = () => {
         if (errors) {
             return
         }
+        //
+        if (!/^[^\s@]{1,100}@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) {
+            message.error($t("账号必须为邮箱格式且最长100个字符"));
+            return;
+        }
+        //
+        const regex = new RegExp("^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$");
+        if (!regex.test(formData.value.password)) {
+            message.error($t("密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上"));
+            return;
+        }
+        //
         loadIng.value = true
         userReg({
             username: formData.value.email,

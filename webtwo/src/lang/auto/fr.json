@@ -156,5 +156,7 @@
     "请输入邮箱地址": "Veuillez saisir l'adresse e-mail",
     "平台已对账号系统进行了全面升级": "La plateforme a complètement mis à niveau le système de compte",
     "请点击我们刚刚发送到您收件箱": "Cliquez ici et nous l'enverrons simplement dans votre boîte de réception",
-    "请勿频繁操作": "Ne pas utiliser fréquemment"
+    "请勿频繁操作": "Ne pas utiliser fréquemment",
+    "新密码不能为空": "Le nouveau mot de passe ne peut pas être vide",
+    "邮箱已存在": "l'email existe déjà"
 }

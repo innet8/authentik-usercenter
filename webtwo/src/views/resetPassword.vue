@@ -8,9 +8,11 @@
                     </p>
                 </div>
                 <transition name="login-mode">
-                    <n-form ref="formRef" :rules="rules" label-placement="left" :show-require-mark="false" :model="formData">
+                    <n-form ref="formRef" :rules="rules" label-placement="left" :show-require-mark="false"
+                        :model="formData">
                         <n-form-item path="password">
-                            <n-input type="password" v-model:value="formData.password" :placeholder="$t('请设置新密码')" clearable>
+                            <n-input type="password" v-model:value="formData.password" :placeholder="$t('请设置新密码')" :maxlength="24"
+                                clearable>
                                 <template #prefix>
                                     <n-icon :component="LockClosed" />
                                 </template>
@@ -20,8 +22,6 @@
                         }}</n-button>
                     </n-form>
                 </transition>
-
-
             </div>
         </div>
     </div>
@@ -35,6 +35,7 @@ import { useRoute } from 'vue-router'
 const loadIng = ref<boolean>(false)
 const message = useMessage()
 const route = useRoute()
+const formRef = ref()
 const formData = ref({
     password: "",
 })
@@ -49,23 +50,27 @@ const rules = ref({
 // 找回密码
 const handleReset = () => {
     // if(!route.query.link_code)return
-    loadIng.value = true
-    resetPassword({
-        step: 2,
-        new_password: formData.value.password,
-        link_code: route.query.link_code,
-    }).then(({ data, msg }) => {
-        message.success($t("重置成功！"))
-        setTimeout(() => {
-            window.location.href = route.query.source_url.toString();
-        }, 3000);
-    })
-        .catch(res => {
-            message.error($t(res.msg))
-        }).finally(() => {
-            loadIng.value = false
+    formRef.value.validate().then(() => {
+        loadIng.value = true
+        resetPassword({
+            step: 2,
+            new_password: formData.value.password,
+            link_code: route.query.link_code,
+        }).then(({ data, msg }) => {
+            message.success($t("重置成功！"))
+            setTimeout(() => {
+                window.location.href = route.query.source_url.toString();
+            }, 3000);
         })
+            .catch(res => {
+                message.error($t(res.msg))
+            }).finally(() => {
+                loadIng.value = false
+            })
 
+    }).catch(() => {
+
+    })
 }
 </script>
 <style scoped>
