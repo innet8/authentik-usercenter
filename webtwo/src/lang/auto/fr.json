@@ -150,5 +150,10 @@
     "密码:": "mot de passe:",
     "请输入验证码": "veuillez entrer le code de vérification",
     "6~24位，支持大小写": "6 ~ 24 bits, majuscules et minuscules prises en charge",
-    "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上": "Mot de passe : 6 à 24 caractères, prend en charge les lettres majuscules et minuscules, les chiffres et les caractères spéciaux anglais, et doit contenir plus de 2 types"
+    "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上": "Mot de passe : 6 à 24 caractères, prend en charge les lettres majuscules et minuscules, les chiffres et les caractères spéciaux anglais, et doit contenir plus de 2 types",
+    "链接已失效，请重新提交请求": "Le lien a expiré, veuillez soumettre à nouveau la demande",
+    "返回登录/注册": "Retour à la connexion/inscription",
+    "请输入邮箱地址": "Veuillez saisir l'adresse e-mail",
+    "平台已对账号系统进行了全面升级": "La plateforme a complètement mis à niveau le système de compte",
+    "请点击我们刚刚发送到您收件箱": "Cliquez ici et nous l'enverrons simplement dans votre boîte de réception"
 }

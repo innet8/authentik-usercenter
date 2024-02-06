@@ -541,9 +541,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """Set password for user"""
         user: User = self.get_object()
         try:
-            print(request.data.get("password"))
+            password = request.data.get("password")
+            if not password:
+                return Response({"password": ["密码不能为空"]}, status=400)
             pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
-            if not re.match(pattern2, request.data.get("password")):
+            if not re.match(pattern2, password):
                 return Response({"password": ["密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上"]}, status=400)
             user.set_password(request.data.get("password"))
             user.save()
@@ -798,20 +800,22 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 md5_hash = hash_object.hexdigest()
                 cache.set(md5_hash, username, 600)
 
-                verification_link = (
-                    CONFIG.get("app_url")
-                    + "page/activate?code="
-                    + md5_hash
-                    + "&source_url="
-                    + source_url
-                )  # 消息内容
-
                 lang = request.META.get('HTTP_LANGUAGE');
                 subject = "Mailbox verification"
                 if lang == 'zh-cn' or lang == 'zh' :
                     subject = "邮箱验证"
                 if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
                     subject = "郵箱驗證"
+
+                verification_link = (
+                    CONFIG.get("app_url")
+                    + "page/activate?code="
+                    + md5_hash
+                    + "&source_url="
+                    + source_url
+                    + "&language="
+                    + lang
+                )  # 消息内容
 
                 result = mail.send_mail(
                     subject=subject,  # 题目
@@ -1445,11 +1449,10 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         md5_hash = hash_object.hexdigest()
         cache.set(md5_hash, username, 600)
 
-        verification_link = (
-            CONFIG.get("app_url") + "/api/v3/core/users/verifyRegisterEmail/?code=" + md5_hash
-        )  # 消息内容
-
         lang = request.META.get('HTTP_LANGUAGE');
+        verification_link = (
+            CONFIG.get("app_url") + "/api/v3/core/users/verifyRegisterEmail/?code=" + md5_hash + "&lang=" + lang
+        )  # 消息内容
         subject = "Mailbox verification"
         if lang == 'zh-cn' or lang == 'zh' :
             subject = "邮箱验证"

@@ -9,32 +9,37 @@
                     {{ config.subtitle || loginType == 'reg' ? $t("输入您的信息以创建帐户") : $t("输入您的凭证以访问您的帐户") }}
                 </p> -->
                 <transition name="login-mode">
-                    <n-form ref="formRef" :rules="rules" label-placement="top" :show-require-mark="false" :model="formData">
+                    <n-form ref="formRef" :rules="rules" label-placement="left" :show-require-mark="false" :model="formData">
                         <div v-if="loginMode == 'access'" class="login-access">
                             <div class="bg-[#F8F8F8] rounded px-16 py-12 mb-24" v-if="loginType == 'forgot'">
                                 <p class=" text-text-tips text-14 "> {{ $t('输入与您的账号关联的电子邮件地址，我们将向您发送一个链接以重置您的密码。') }}
                                 </p>
                             </div>
-                            <n-form-item :label="$t('邮箱')" path="email"
+                            <n-form-item  path="email"
                                 v-if="loginType == 'reg' || loginType == 'login' || loginType == 'forgot'">
-                                <n-input v-model:value="formData.email" @blur="onBlur" :placeholder="loginType == 'forgot' ? $t('請輸入郵箱地址') : $t('请输入用户账号')"
+                                <n-input v-model:value="formData.email" @blur="onBlur" :maxlength="100" :placeholder="
+                                    loginType == 'reg' ? $t('请输入注册邮箱') :
+                                    loginType == 'forgot' ? $t('請輸入郵箱地址') : $t('请输入用户账号')
+                                "
                                     clearable>
                                     <template #prefix>
                                         <n-icon :component="Mail" />
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-form-item :label="$t('密码')" path="password"
+                            <n-form-item  path="password"
                                 v-if="loginType == 'reg' || loginType == 'login'">
-                                <n-input type="password" v-model:value="formData.password" @blur="onBlur"
-                                    :placeholder="$t('请输入登录密码')" clearable>
+                                <n-input type="password" v-model:value="formData.password" @blur="onBlur" :maxlength="24"
+                                    :placeholder="
+                                        loginType == 'reg' ? $t('请设置登录密码') :$t('请输入登录密码')
+                                    " clearable>
                                     <template #prefix>
                                         <n-icon :component="LockClosed" />
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-form-item :label="$t('验证码')" path="code" v-if="codeNeed">
-                                <n-input class="code-load-input" v-model:value="code" :placeholder="$t('输入图形验证码')"
+                            <n-form-item  path="code" v-if="codeNeed">
+                                <n-input class="code-load-input" v-model:value="formData.code" :placeholder="$t('输入图形验证码')" :maxlength="5"
                                     clearable>
                                     <template #prefix>
                                         <n-icon :component="CheckmarkCircleOutline" />
@@ -50,9 +55,9 @@
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-form-item :label="$t('确认密码')" path="confirmPassword" v-if="loginType == 'reg'">
-                                <n-input type="password" v-model:value="formData.confirmPassword"
-                                    :placeholder="$t('输入确认密码')" clearable>
+                            <n-form-item  path="confirmPassword" v-if="loginType == 'reg'">
+                                <n-input type="password" v-model:value="formData.confirmPassword" :maxlength="24"
+                                    :placeholder="$t('请输入确认密码')" clearable>
                                     <template #prefix>
                                         <n-icon :component="LockClosed" />
                                     </template>
@@ -138,7 +143,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from "vue"
+import { ref, computed  } from "vue"
 import { userLogin, userReg, resend, needCode, resetPassword } from "@/api/modules/user"
 import { FormItemRule, useDialog } from "naive-ui"
 import { useMessage } from "@/utils/messageAll"
@@ -150,7 +155,6 @@ import webTs from "@/utils/web"
 const message = useMessage()
 const route = useRoute()
 const loadIng = ref<boolean>(false)
-const code = ref("")
 const codeUrl = ref("")
 const codeLoad = ref(0)
 const userState = UserStore()
@@ -166,6 +170,7 @@ const formData = ref({
     password: "",
     confirmPassword: "",
     invite: "",
+    code: "",
 })
 
 const options = ref([
@@ -215,18 +220,20 @@ const rules = ref({
         required: true,
         validator(rule: FormItemRule, value: string) {
             if (!value) {
-                return new Error(loginType.value == 'forgot' ? $t('請輸入郵箱地址') : $t('请输入账号'))
+                return new Error(loginType.value == 'forgot' ? $t('請輸入郵箱地址') : $t('请输入用户账号'))
             }
-            // else if (!utils.isEmail(value)) {
-            //     return new Error($t('请输入正确的邮箱'))
-            // }
             return true
         },
         trigger: ['input', 'blur']
     },
+    code: {
+        required: true,
+        message: $t('请输入验证码'),
+        trigger: ['input', 'blur']
+    },
     password: {
         required: true,
-        message: $t('请输入密码'),
+        message: $t('请输入登录密码'),
         trigger: ['input', 'blur']
     },
     confirmPassword: {
@@ -291,7 +298,7 @@ const handleLogin = () => {
             email: formData.value.email,
             username: formData.value.email,
             password: formData.value.password,
-            pic_code: code.value,
+            pic_code: formData.value.code,
             source_url: config.value.sourceUrl || '',
         }).then(({ data, msg }) => {
             userState.info = data
@@ -302,19 +309,20 @@ const handleLogin = () => {
                 parent.window.location.href = parent.window.location.origin + `/page/success?language=${config.value.language}&ak-token=${data.token}`
             }
         })
-            .catch(res => {
-                loadIng.value = false
-                if (res.data == "needcode") {
-                    onBlur()
-                }
-                if (res.code != "10") {
-                    message.error($t(res.msg))
-                }
-                if (res.code == "10") {
-                    loginType.value = 'secure'
-                    handleReset();
-                }
-            })
+        .catch(res => {
+            loadIng.value = false
+            refreshCode()
+            if (res.data == "needcode") {
+                onBlur()
+            }
+            if (res.code != "10") {
+                message.error($t(res.msg))
+            }
+            if (res.code == "10") {
+                loginType.value = 'secure'
+                handleReset();
+            }
+        })
     }).catch(_ => { })
 }
 
@@ -417,19 +425,23 @@ const onBlur = () => {
     const upData = {
         username: formData.value.email,
     }
-    needCode(upData)
-        .then(({ data }) => {
-            if (data == 'y') {
-                codeNeed.value = true
-                codeUrl.value = webTs.apiUrl(`/api/v3/core/users/picCode/?username=${formData.value.email}`)
-            }
-        })
+    needCode(upData).then(({ data }) => {
+        if (data == 'y') {
+            codeNeed.value = true
+            codeUrl.value = webTs.apiUrl(`/api/v3/core/users/picCode/?username=${formData.value.email}`)
+        } else {
+            codeNeed.value = false
+            codeUrl.value = ""
+        }
+    })
 }
 
 // 刷新验证码
 const refreshCode = () => {
     codeUrl.value = webTs.apiUrl(`/api/v3/core/users/picCode/?username=${formData.value.email}&_='` + Math.random())
 }
+
+
 </script>
 
 <style lang="less" scoped>
@@ -471,7 +483,7 @@ const refreshCode = () => {
             }
 
             .login-title {
-                @apply text-30 font-semibold text-center mt-40;
+                @apply md:text-30 text-24 font-semibold text-center mt-40;
             }
 
             .login-subtitle {
@@ -483,7 +495,7 @@ const refreshCode = () => {
             }
 
             .login-access {
-                @apply mt-32 mx-40 mb-40;
+                @apply mt-32 md:mx-40 mx-24 md:mb-40 mb-24;
 
                 .n-input {
                     transition: all 0s;

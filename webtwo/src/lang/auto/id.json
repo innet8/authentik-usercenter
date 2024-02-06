@@ -150,5 +150,10 @@
     "密码:": "kata sandi:",
     "请输入验证码": "silakan masukkan kode verifikasi",
     "6~24位，支持大小写": "6~24 bit, mendukung huruf besar dan kecil",
-    "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上": "Kata sandi: 6~24 karakter, mendukung huruf besar dan kecil, angka, dan karakter khusus bahasa Inggris, dan harus berisi lebih dari 2 jenis"
+    "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上": "Kata sandi: 6~24 karakter, mendukung huruf besar dan kecil, angka, dan karakter khusus bahasa Inggris, dan harus berisi lebih dari 2 jenis",
+    "链接已失效，请重新提交请求": "Tautan telah kedaluwarsa, silakan kirim ulang permintaan",
+    "返回登录/注册": "Kembali ke login/daftar",
+    "请输入邮箱地址": "Silakan masukkan alamat email",
+    "平台已对账号系统进行了全面升级": "Platform ini telah meningkatkan sistem akun secara komprehensif",
+    "请点击我们刚刚发送到您收件箱": "Klik di sini dan kami akan mengirimkannya ke kotak masuk Anda"
 }

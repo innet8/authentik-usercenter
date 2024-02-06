@@ -9,31 +9,36 @@
                     {{ config.subtitle || loginType == 'reg' ? $t("输入您的信息以创建帐户") : $t("输入您的凭证以访问您的帐户") }}
                 </p> -->
                 <transition name="login-mode">
-                    <n-form ref="formRef" :rules="rules" label-placement="top" :show-require-mark="false" :model="formData">
+                    <n-form ref="formRef" :rules="rules" label-placement="left" :show-require-mark="false" :model="formData">
                         <div v-if="loginMode == 'access'" class="login-access">
                             <div class="bg-[#F8F8F8] rounded px-16 py-12 mb-24" v-if="loginType == 'forgot'">
                                 <p class=" text-text-tips text-14 "> {{ $t('输入与您的账号关联的电子邮件地址，我们将向您发送一个链接以重置您的密码。') }}
                                 </p>
                             </div>
-                            <n-form-item :label="$t('邮箱')" path="email"
+                            <n-form-item  path="email"
                                 v-if="loginType == 'reg' || loginType == 'login' || loginType == 'forgot'">
-                                <n-input v-model:value="formData.email" @blur="onBlur" :maxlength="100" :placeholder="loginType == 'forgot' ? $t('請輸入郵箱地址') : $t('请输入用户账号')"
+                                <n-input v-model:value="formData.email" @blur="onBlur" :maxlength="100" :placeholder="
+                                    loginType == 'reg' ? $t('请输入注册邮箱') :
+                                    loginType == 'forgot' ? $t('请输入邮箱地址') : $t('请输入用户账号')
+                                "
                                     clearable>
                                     <template #prefix>
                                         <n-icon :component="Mail" />
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-form-item :label="$t('密码')" path="password"
+                            <n-form-item  path="password"
                                 v-if="loginType == 'reg' || loginType == 'login'">
                                 <n-input type="password" v-model:value="formData.password" @blur="onBlur" :maxlength="24"
-                                    :placeholder="$t('请输入登录密码')" clearable>
+                                    :placeholder="
+                                        loginType == 'reg' ? $t('请设置登录密码') :$t('请输入登录密码')
+                                    " clearable>
                                     <template #prefix>
                                         <n-icon :component="LockClosed" />
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-form-item :label="$t('验证码')" path="code" v-if="codeNeed && loginType == 'login'">
+                            <n-form-item path="code" v-if="codeNeed && loginType == 'login'">
                                 <n-input class="code-load-input" v-model:value="formData.code" :placeholder="$t('输入图形验证码')" :maxlength="5"
                                     clearable>
                                     <template #prefix>
@@ -50,22 +55,25 @@
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-form-item :label="$t('确认密码')" path="confirmPassword" v-if="loginType == 'reg'">
+                            <n-form-item  path="confirmPassword" v-if="loginType == 'reg'">
                                 <n-input type="password" v-model:value="formData.confirmPassword" :maxlength="24"
-                                    :placeholder="$t('输入确认密码')" clearable>
+                                    :placeholder="$t('请输入确认密码')" clearable>
                                     <template #prefix>
                                         <n-icon :component="LockClosed" />
                                     </template>
                                 </n-input>
                             </n-form-item>
                             <div class="" v-if="loginType == 'regSuccess'">
-                                <p class="text-text-li text-16 font-normal" style="word-break: break-all;">{{ $t('我们发送邮件至') }} <span
-                                        class=" text-[#0C9189]">{{ formData.email }}</span>
-                                    {{ $t('请点击我们刚刚发送到您收件箱的链接来确认您的电子邮件地址') }}</p>
+                                <p class="text-text-li text-16 font-normal" style="word-break: break-all;">
+                                    {{ $t('我们发送邮件至') }}
+                                    <span class="text-[#0C9189]"> {{ formData.email }} </span>
+                                    <p class="mt-12">{{ $t('请点击我们刚刚发送到您收件箱的链接来确认您的电子邮件地址') }}</p>
+                                </p>
                             </div>
                             <div class="" v-if="loginType == 'secure'">
-                                <p class="text-text-li text-16 font-normal">{{ $t('平台已对账号系统进行了全面升级，请点击我们刚刚发送到您收件箱') }} <span
-                                        class=" text-[#0C9189]">（{{ formData.email }}）</span>
+                                <p class="text-text-li text-16 font-normal text-center">
+                                    {{ $t('平台已对账号系统进行了全面升级，请点击我们刚刚发送到您收件箱') }}
+                                    <span class=" text-[#0C9189]">（{{ formData.email }}）</span>
                                     {{ $t('的链接来重新设置登录密码') }}</p>
                             </div>
                             <div class="login-switch" v-if="config.switch !== 'false'">
@@ -105,7 +113,7 @@
                             <n-button v-if="loginType == 'regSuccess'" type="primary" :disabled="resendCTime > 0"
                                 :loading="loadIng" @click="handleResend">{{ resendCTime > 0 ? $t("重新发送") +
                                     `(${resendCTime}s)`
-                                    : $t("重新发送邮件") }}</n-button>
+                                    : $t("重新发送验证邮件") }}</n-button>
                             <n-button v-if="loginType == 'secure'" type="primary" :disabled="resetTime > 0"
                                 :loading="loadIng" @click="handleReset">{{ resetTime > 0 ? $t("重新发送") +
                                     `(${resetTime}s)`
@@ -117,8 +125,7 @@
                             <template v-if="loginType == 'regSuccess'">
                                 <p class="flex justify-center mt-16 text-14 text-text-tips">
                                     {{ $t("已验证完邮箱或更换邮箱？") }}
-                                    <a class=" text-primary-color no-underline" href="javascript:void(0)"
-                                        @click="changeLoginType('login')"> {{ $t("登录账号") }}</a>
+                                    <a class=" text-primary-color no-underline ml-5" href="javascript:void(0)" @click="changeLoginType('login')"> {{ $t("返回登录/注册") }}</a>
                                 </p>
                             </template>
                             <div class="flex justify-center mt-32"
@@ -215,7 +222,7 @@ const rules = ref({
         required: true,
         validator(rule: FormItemRule, value: string) {
             if (!value) {
-                return new Error(loginType.value == 'forgot' ? $t('請輸入郵箱地址') : $t('请输入账号'))
+                return new Error(loginType.value == 'forgot' ? $t('请输入邮箱地址') : $t('请输入用户账号'))
             }
             return true
         },
@@ -228,7 +235,7 @@ const rules = ref({
     },
     password: {
         required: true,
-        message: $t('请输入密码'),
+        message: $t('请输入登录密码'),
         trigger: ['input', 'blur']
     },
     confirmPassword: {

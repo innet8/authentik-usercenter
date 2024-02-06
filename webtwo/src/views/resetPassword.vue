@@ -8,8 +8,8 @@
                     </p>
                 </div>
                 <transition name="login-mode">
-                    <n-form ref="formRef" :rules="rules" label-placement="top" :show-require-mark="false" :model="formData">
-                        <n-form-item :label="$t('设置密码')" path="password">
+                    <n-form ref="formRef" :rules="rules" label-placement="left" :show-require-mark="false" :model="formData">
+                        <n-form-item path="password">
                             <n-input type="password" v-model:value="formData.password" :placeholder="$t('请设置新密码')" clearable>
                                 <template #prefix>
                                     <n-icon :component="LockClosed" />
@@ -48,7 +48,7 @@ const rules = ref({
 
 // 找回密码
 const handleReset = () => {
-    if(!route.query.link_code)return
+    // if(!route.query.link_code)return
     loadIng.value = true
     resetPassword({
         step: 2,
