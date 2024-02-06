@@ -1042,6 +1042,24 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         else:
             return self.errUserResponse("", "无效操作")
+        
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def update_username(self, request: Request) -> Response:
+        """修改用户名"""
+        if not self.check_api_token(request):
+            return self.errUserResponse("", "INVALID TOKENk")
+
+        old_username = request.data.get("old_username")
+        new_username = request.data.get("new_username")
+        try:
+            user = User.objects.get(username=old_username)
+        except User.DoesNotExist:
+            return self.errUserResponse("", "账号不存在")
+
+        user.username = user.email = user.name = new_username
+        user.save()
+        return self.sucUserResponse("", "更新邮箱成功")
+
 
     def generate_sign(self, username: str, step: str) -> tuple[str]:
         """验证签名"""
