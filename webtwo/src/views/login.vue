@@ -33,7 +33,7 @@
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-form-item :label="$t('验证码')" path="code" v-if="codeNeed">
+                            <n-form-item :label="$t('验证码')" path="code" v-if="codeNeed && loginType == 'login'">
                                 <n-input class="code-load-input" v-model:value="formData.code" :placeholder="$t('输入图形验证码')" :maxlength="5"
                                     clearable>
                                     <template #prefix>
