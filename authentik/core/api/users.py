@@ -1012,6 +1012,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             if not is_valid_sign:
                 return self.errUserResponse("", message_or_username)
 
+            if User.objects.filter(username=new_email).exists():
+                return self.errUserResponse("", "邮箱已存在")
+
             is_sent, message = self.dispatch_email(new_email, "new_email", language, "")
             if is_sent:
                 return self.sucUserResponse({
@@ -1266,6 +1269,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if not val:
             return False, "验证码已失效，请重新获取"
         if username == val:
+            cache.set(md5_hash, "", 600)
             return True, "验证成功"
         else:
             return False, "验证码错误"
