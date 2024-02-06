@@ -1279,7 +1279,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """验证忘记密码链接"""
         code = request.query_params.get("code")
         lang = request.query_params.get("lang")
-        source_url = request.query_params.get("source_url")
+        source_url = request.query_params.get("source_url") + "?lang=" + lang
         if not code:
             return self.errUserResponse("", "code不能为空")
         username = cache.get(code)
