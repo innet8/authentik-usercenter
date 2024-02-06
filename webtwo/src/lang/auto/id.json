@@ -158,5 +158,7 @@
     "请点击我们刚刚发送到您收件箱": "Klik di sini dan kami akan mengirimkannya ke kotak masuk Anda",
     "请勿频繁操作": "Jangan sering beroperasi",
     "新密码不能为空": "Kata sandi baru tidak boleh kosong",
-    "邮箱已存在": "Email sudah ada"
+    "邮箱已存在": "Email sudah ada",
+    "无效的验证码": "Kode verifikasi tidak benar",
+    "验证码无效": "Kode verifikasi tidak valid"
 }

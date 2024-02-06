@@ -1045,7 +1045,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         else:
             return self.errUserResponse("", "无效操作")
-        
+
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def update_username(self, request: Request) -> Response:
         """修改用户名"""
@@ -1074,7 +1074,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """验证签名"""
         username = cache.get("sign_email::" + sign + step)
         if not sign:
-            return False, "验证码错误"
+            return False, "验证码无效"
         if not username:
             return False, "无效请求"
         return True, username
@@ -1285,12 +1285,13 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         md5_hash = hash_object.hexdigest()
         val = cache.get(md5_hash)
         if not val:
-            return False, "验证码已失效，请重新获取"
+            # 验证码已失效，请重新获取
+            return False, "验证码无效"
         if username == val:
             cache.set(md5_hash, "", 600)
             return True, "验证成功"
         else:
-            return False, "验证码错误"
+            return False, "验证码无效"
 
     @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
     def verify_retrieve_password(self, request: Request) -> Response:

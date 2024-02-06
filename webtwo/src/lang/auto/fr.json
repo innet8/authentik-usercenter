@@ -158,5 +158,7 @@
     "请点击我们刚刚发送到您收件箱": "Cliquez ici et nous l'enverrons simplement dans votre boîte de réception",
     "请勿频繁操作": "Ne pas utiliser fréquemment",
     "新密码不能为空": "Le nouveau mot de passe ne peut pas être vide",
-    "邮箱已存在": "l'email existe déjà"
+    "邮箱已存在": "l'email existe déjà",
+    "无效的验证码": "Code de vérification invalide",
+    "验证码无效": "Le code de vérification n'est pas valide"
 }

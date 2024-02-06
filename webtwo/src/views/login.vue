@@ -9,7 +9,7 @@
                     {{ config.subtitle || loginType == 'reg' ? $t("输入您的信息以创建帐户") : $t("输入您的凭证以访问您的帐户") }}
                 </p> -->
                 <transition name="login-mode">
-                    <n-form ref="formRef" :rules="rules" label-placement="left" :show-require-mark="false" :model="formData">
+                    <n-form ref="formRef" :rules="rules" v-if="show" label-placement="left" :show-require-mark="false" :model="formData">
                         <div v-if="loginMode == 'access'" class="login-access">
                             <div class="bg-[#F8F8F8] rounded px-16 py-12 mb-24" v-if="loginType == 'forgot'">
                                 <p class=" text-text-tips text-14 "> {{ $t('输入与您的账号关联的电子邮件地址，我们将向您发送一个链接以重置您的密码。') }}
@@ -145,7 +145,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed  } from "vue"
+import { ref, computed, watch  } from "vue"
 import { userLogin, userReg, resend, needCode, resetPassword } from "@/api/modules/user"
 import { FormItemRule, useDialog } from "naive-ui"
 import { useMessage } from "@/utils/messageAll"
@@ -163,6 +163,7 @@ const userState = UserStore()
 const dialog = useDialog()
 const loginMode = ref("access") //qrcode
 const codeNeed = ref(false)
+const show = ref(true)
 const resendCTime = ref(0)
 const resetTime = ref(0)
 const loginType = ref<String>("login")
@@ -251,6 +252,17 @@ const rules = ref({
         trigger: ['input', 'blur'],
     },
 })
+
+watch(
+    () => loginType.value,
+    () => {
+        show.value = false;
+        nextTick(()=>{
+            show.value = true;
+        })
+    },
+    { immediate: true }
+)
 
 const formTitle = computed(() => {
     let result = $t('登录到您的AK账号')
