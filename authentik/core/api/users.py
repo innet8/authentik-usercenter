@@ -1214,6 +1214,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         hash_object = hashlib.md5(token.encode())
         md5_hash = hash_object.hexdigest()
         cache.set("code::" + username, md5_hash, 30 * 60)
+        cache.set(md5_hash, username, 30 * 60)
         link = (
             CONFIG.get("app_url")
             + "api/v3/core/users/verify_retrieve_password/?code="
