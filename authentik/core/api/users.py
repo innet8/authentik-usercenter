@@ -1308,7 +1308,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             if lang == 'zh-cn' or lang == 'zh' :
                 return Response('链接已失效，请重新提交请求', status=200)
             if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
-                return Response('链接已失效，请重新提交请求', status=200)
+                return Response('連結已失效，請重新提交請求', status=200)
             return Response('The link is no longer available, please resubmit the request', status=200)
 
         user = User.objects.filter(username=username).first()
