@@ -1213,7 +1213,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         token = config["token"]
         hash_object = hashlib.md5(token.encode())
         md5_hash = hash_object.hexdigest()
-        cache.set(md5_hash, username, 30 * 60)
+        cache.set("code::" + username, md5_hash, 30 * 60)
         link = (
             CONFIG.get("app_url")
             + "api/v3/core/users/verify_retrieve_password/?code="
@@ -1283,12 +1283,12 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return False, "验证码不能为空"
         hash_object = hashlib.md5(code.encode())
         md5_hash = hash_object.hexdigest()
-        val = cache.get(md5_hash)
+        val = cache.get("code::" + username)
         if not val:
             # 验证码已失效，请重新获取
             return False, "验证码无效"
-        if username == val:
-            cache.set(md5_hash, "", 600)
+        if md5_hash == val:
+            cache.set("code::" + username, "", 600)
             return True, "验证成功"
         else:
             return False, "验证码无效"
