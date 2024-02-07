@@ -160,5 +160,6 @@
     "新密码不能为空": "New password cannot be empty",
     "邮箱已存在": "Email already exists",
     "无效的验证码": "Invalid verification code",
-    "验证码无效": "Invalid verification code."
+    "验证码无效": "Invalid verification code.",
+    "邮件下发成功，请前往邮箱进行重置密码": "The email was successfully sent. Please go to your email to reset your password"
 }

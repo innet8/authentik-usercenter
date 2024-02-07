@@ -160,5 +160,6 @@
     "新密码不能为空": "Kata sandi baru tidak boleh kosong",
     "邮箱已存在": "Email sudah ada",
     "无效的验证码": "Kode verifikasi tidak benar",
-    "验证码无效": "Kode verifikasi tidak valid"
+    "验证码无效": "Kode verifikasi tidak valid",
+    "邮件下发成功，请前往邮箱进行重置密码": "Email berhasil dikirim. Silakan buka email Anda untuk mengatur ulang kata sandi Anda."
 }

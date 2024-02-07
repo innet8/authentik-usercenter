@@ -160,5 +160,6 @@
     "新密码不能为空": "Le nouveau mot de passe ne peut pas être vide",
     "邮箱已存在": "l'email existe déjà",
     "无效的验证码": "Code de vérification invalide",
-    "验证码无效": "Le code de vérification n'est pas valide"
+    "验证码无效": "Le code de vérification n'est pas valide",
+    "邮件下发成功，请前往邮箱进行重置密码": "L'e-mail a été envoyé avec succès. Veuillez accéder à votre adresse e-mail pour réinitialiser votre mot de passe."
 }

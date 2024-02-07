@@ -423,7 +423,7 @@ const handleReset = () => {
             username: formData.value.email,
             source_url: config.value.sourceUrl || '',
         }).then(({ data, msg }) => {
-            message.success(msg)
+            message.success($t(msg))
             resetTime.value = 120
             let times = setInterval(() => {
                 resetTime.value--;
