@@ -28,12 +28,13 @@ class RequestHttp {
          */
         this.service.interceptors.request.use(
             function (config) {
-                config.baseURL = GlobalStore().baseUrl + '/api/v3'
-                config.headers.Token = JSON.parse(localStorage.getItem("UserState"))?.info?.token
-                config.headers.Language = localStorage.getItem("lang")
                 //
                 document.cookie = "authentik_csrf=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                 document.cookie = "authentik_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                //
+                config.baseURL = GlobalStore().baseUrl + '/api/v3'
+                config.headers.Token = JSON.parse(localStorage.getItem("UserState"))?.info?.token
+                config.headers.Language = localStorage.getItem("lang")
                 //
                 return config
             },

@@ -12,6 +12,10 @@ export default function createDemoRouter(app, routes) {
     })
 
     router.beforeEach(function (to, from, next) {
+        //
+        document.cookie = "authentik_csrf=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "authentik_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        //
         const userStore = UserStore();
         if(to.query.token){
             userStore.setToken(to.query.token)
