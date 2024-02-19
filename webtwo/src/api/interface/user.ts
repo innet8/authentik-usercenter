@@ -38,6 +38,7 @@ export namespace User {
     export interface resendData {
         username: string
         language: any
+        source_url?: any
     }
     // 注册请求
     export interface resetData {

@@ -393,6 +393,7 @@ const handleResend = () => {
     resend({
         username: formData.value.email,
         language: route.query.language,
+        source_url: config.value.sourceUrl || '',
     }).then(({ data, msg }) => {
         message.success($t("重新发送成功！"))
         resendCTime.value = 120

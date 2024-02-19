@@ -1468,6 +1468,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "用户不存在，请前往注册")
         if user.is_verify_email:
             return self.errUserResponse("", "邮箱已验证，请直接登录")
+        source_url = request.data.get("source_url", "")
         # 生成6位数字验证码
         email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
         hash_object = hashlib.md5(email_code.encode())
@@ -1476,8 +1477,15 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
         lang = request.META.get('HTTP_LANGUAGE');
         verification_link = (
-            CONFIG.get("app_url") + "/api/v3/core/users/verifyRegisterEmail/?code=" + md5_hash + "&lang=" + lang
-        )  # 消息内容
+            CONFIG.get("app_url")
+            + "page/activate?code="
+            + md5_hash
+            + "&source_url="
+            + source_url
+            + "&language="
+            + lang
+        )
+        # 消息内容
         subject = "Mailbox verification"
         if lang == 'zh-cn' or lang == 'zh' :
             subject = "邮箱验证"
