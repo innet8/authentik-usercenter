@@ -802,9 +802,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
 
                 lang = request.META.get('HTTP_LANGUAGE');
                 subject = "Mailbox verification"
-                if lang == 'zh-cn' or lang == 'zh' :
+                if lang in ('zh-cn', 'zh'):
                     subject = "邮箱验证"
-                if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
+                if lang in ('zh-tw', 'tc', 'zh-CHT'):
                     subject = "郵箱驗證"
 
                 verification_link = (
@@ -820,7 +820,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 result = mail.send_mail(
                     subject=subject,  # 题目
                     message="注册验证",
-                    from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
+                    from_email=self.get_mail_sender_name(lang),  # 发送者
                     recipient_list=[username],  # 接收者邮件列表
                     html_message=render_to_string(
                         "email/verify_email.html",
@@ -1157,6 +1157,17 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return False, "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上"
         return True, ""
 
+    def get_mail_sender_name(self, lang: str) -> tuple[str]:
+        """获取邮箱发送者名称"""
+        sender_name = "AK User Center"
+        if lang in ('zh-cn', 'zh'):
+            sender_name = "AK用户中心"
+        if lang in ('zh-tw', 'tc', 'zh-CHT'):
+            sender_name = "AK使用者中心"
+        if CONFIG.get("email.debug") is True:
+            sender_name = sender_name + '-test'
+        return "{} <{}>".format(sender_name, settings.DEFAULT_FROM_EMAIL)
+
     def dispatch_email( self, username: str, key: str, lang: str, source_url: str) -> tuple[bool, str]:
         """邮件发送：找回密码(retrieve_password)、更改邮箱(original_email)、启用邮箱(new_email)"""
         is_valid_username, msg = self.validate_username(username)
@@ -1176,11 +1187,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         subject = "Reset your password"
         subject_two = "Update your email"
         subject_three = "Activate your email"
-        if lang == 'zh-cn' or lang == 'zh' :
+        if lang in ('zh-cn', 'zh'):
             subject = "重置您的密码"
             subject_two = "更改您的邮箱"
             subject_three = "启用您的邮箱"
-        if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
+        if lang in ('zh-tw', 'tc', 'zh-CHT'):
             subject = "重設您的密碼"
             subject_two = "更改您的郵箱"
             subject_three = "啟用您的郵箱"
@@ -1236,7 +1247,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         result = mail.send_mail(
             subject=config["subject"],
             message=config["subject"],
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=self.get_mail_sender_name(lang),
             recipient_list=[username],
             html_message=html_message,
         )
@@ -1305,9 +1316,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         username = cache.get(code)
         if not username:
             # "链接已失效，请重新提交请求"
-            if lang == 'zh-cn' or lang == 'zh' :
+            if lang in ('zh-cn', 'zh'):
                 return Response('链接已失效，请重新提交请求', status=200)
-            if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
+            if lang in ('zh-tw', 'tc', 'zh-CHT'):
                 return Response('連結已失效，請重新提交請求', status=200)
             return Response('The link is no longer available, please resubmit the request', status=200)
 
@@ -1487,16 +1498,16 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         )
         # 消息内容
         subject = "Mailbox verification"
-        if lang == 'zh-cn' or lang == 'zh' :
+        if lang in ('zh-cn', 'zh'):
             subject = "邮箱验证"
-        if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
+        if lang in ('zh-tw', 'tc', 'zh-CHT'):
             subject = "郵箱驗證"
 
         result = mail.send_mail(
             subject = subject,  # 题目
             message = "注册验证",
-            from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
-            recipient_list=[username],  # 接收者邮件列表
+            from_email = self.get_mail_sender_name(lang),  # 发送者
+            recipient_list = [username],  # 接收者邮件列表
             html_message=render_to_string(
                 "email/verify_email.html",
                 {"username": username, "verification_link": verification_link, "language": lang},
@@ -1539,9 +1550,9 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 if not lang:
                     lang = 'tc'
                 subject = "Mailbox verification"
-                if lang == 'zh-cn' or lang == 'zh' :
+                if lang in ('zh-cn', 'zh'):
                     subject = "邮箱验证"
-                if lang == 'zh-tw' or lang == 'tc' or lang == 'zh-CHT':
+                if lang in ('zh-tw', 'tc', 'zh-CHT'):
                     subject = "郵箱驗證"
 
                 verification_link = (
@@ -1557,7 +1568,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 result = mail.send_mail(
                     subject=subject,  # 题目
                     message="注册验证",
-                    from_email=settings.DEFAULT_FROM_EMAIL,  # 发送者
+                    from_email=self.get_mail_sender_name(lang),  # 发送者
                     recipient_list=[username],  # 接收者邮件列表
                     html_message=render_to_string(
                         "email/verify_email.html",
