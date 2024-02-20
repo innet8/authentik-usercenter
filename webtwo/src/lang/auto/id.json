@@ -161,5 +161,10 @@
     "邮箱已存在": "Email sudah ada",
     "无效的验证码": "Kode verifikasi tidak benar",
     "验证码无效": "Kode verifikasi tidak valid",
-    "邮件下发成功，请前往邮箱进行重置密码": "Email berhasil dikirim. Silakan buka email Anda untuk mengatur ulang kata sandi Anda."
+    "邮件下发成功，请前往邮箱进行重置密码": "Email berhasil dikirim. Silakan buka email Anda untuk mengatur ulang kata sandi Anda.",
+    "失效": "Tidak sah",
+    "返回注册": "Kembali ke pendaftaran",
+    "链接已失效，请重新发起": "Tautan telah kedaluwarsa, silakan coba lagi",
+    "链接已失效，请联系专属客服": "Tautan telah kedaluwarsa, silakan hubungi layanan pelanggan khusus",
+    "返回重置密码": "Kembali untuk mengatur ulang kata sandi"
 }

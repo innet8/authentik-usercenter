@@ -6,8 +6,10 @@
                 <h3 class="text-32 font-semibold text-center text-text-li mt-40">{{ $t('激活账号中...') }}</h3>
                 <p class="text-16 text-center text-text-li mt-16">{{ $t('账号激活中，请耐心等待，激活成功后页面自动刷新页面') }}</p>
             </div>
-            <div v-else class="activate-box" >
-                <h3 class="text-32 font-semibold text-center text-text-li mt-10">{{ error }}</h3>
+            <div v-else class="activate-box">
+                <img class="m-auto block " src="@/statics/images/icon/invalid.svg">
+                <p class="text-24  text-center text-text-li mt-36">{{ error }}</p>
+                <n-button v-if="callback" class="w-full mt-36" @click="handleButton" :type="'primary'">{{ $t("返回注册") }}</n-button>
             </div>
         </div>
     </div>
@@ -21,6 +23,13 @@ import { useMessage } from "@/utils/messageAll"
 const route = useRoute()
 const message = useMessage()
 const error = ref("")
+const callback = ref("")
+
+// 来源
+let sourceUrl = decodeURIComponent(String(route.query.sourceUrl || ''));
+try {
+    sourceUrl = atob(sourceUrl)
+} catch (error) {}
 
 const handleActivate = () => {
     verifyRegisterEmail({
@@ -29,7 +38,7 @@ const handleActivate = () => {
     }).then(({ data, msg }) => {
         message.success($t("激活成功！"))
         setTimeout(()=>{
-            window.location.href = route.query.source_url.toString();
+            window.location.href = sourceUrl;
         },3000)
     }).catch(res => {
         error.value = $t(res.msg);
@@ -39,10 +48,15 @@ const handleActivate = () => {
 }
 
 onMounted(()=>{
+    route.query.callback && (callback.value = route.query.callback + '')
     if(route.query.code){
         handleActivate()
     }
 })
+
+const handleButton = () => {
+    window.location.href = callback.value;
+}
 
 </script>
 

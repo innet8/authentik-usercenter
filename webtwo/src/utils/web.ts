@@ -28,5 +28,52 @@ const webTs = {
         }
         return str
     },
+    // 获取url参数
+    getRequest(url, key) {
+        var theRequest = new Object();
+        if (url.indexOf("?") != -1) {
+            var str = url.split("?")[1] || [];
+            var strs = str.split("&");
+            for(var i = 0; i < strs.length; i ++) {
+                theRequest[strs[i].split("=")[0]] =  decodeURI(decodeURIComponent(
+                    decodeURI(decodeURIComponent(
+                        escape(strs[i].split("=")[1]).replace(/\+/g, '%20')
+                    ))
+                ));
+            }
+        }
+        return key ? theRequest[key] : theRequest;
+    },
+    // 添加参数
+    addParamToUrl(url, key, value) {
+        const urlParts = url.split('?');
+        let baseUrl = urlParts[0];
+        let queryString = urlParts[1] || '';
+
+        // 将参数字符串转换为对象
+        let params = {};
+        queryString.split('&').forEach(item => {
+            let parts = item.split('=');
+            params[parts[0]] = parts[1];
+        });
+
+        // 移除已有参数中的同名key
+        delete params[key];
+
+        // 添加新参数
+        let updatedQueryString = Object.keys(params)
+            .map(key => `${key}=${params[key]}`)
+            .join('&');
+
+        let updatedUrl = baseUrl + (updatedQueryString ? `?${updatedQueryString}` : '');
+
+        if (updatedUrl.includes('?')) {
+            updatedUrl += `&${key}=${value}`;
+        } else {
+            updatedUrl += `?${key}=${value}`;
+        }
+
+        return updatedUrl;
+    }
 }
 export default webTs
