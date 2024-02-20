@@ -25,14 +25,14 @@
             <div class="activate-box" v-else-if="showType==3">
                 <img class=" m-auto block" src="@/statics/images/icon/activate.svg">
                 <p class="text-24  text-center text-text-li mt-36">{{ $t("账号已激活，可直接登录") }}</p>
-                <n-button class="w-full mt-36" @click="handleButton" :type="'primary'">{{ $t("返回登录") }}</n-button>
+                <n-button class="w-full mt-36" @click="handleButton(1)" :type="'primary'">{{ $t("返回登录") }}</n-button>
             </div>
             <div class="activate-box" v-else-if="showType==4">
                 <img class="m-auto block " src="@/statics/images/icon/invalid.svg">
                 <p class="text-24 text-center text-text-li mt-36">
                     {{ regType == 'web' ? error : $t("链接已失效，请联系专属客服")}}
                 </p>
-                <n-button v-if="error && regType == 'web'" class="w-full mt-36" @click="handleButton" :type="'primary'">
+                <n-button v-if="error && regType == 'web'" class="w-full mt-36" @click="handleButton(2)" :type="'primary'">
                     {{ $t("返回注册") }}
                 </n-button>
             </div>
@@ -56,7 +56,7 @@ const route = useRoute()
 const message = useMessage()
 
 // 来源
-let sourceUrl = decodeURIComponent(String(route.query.sourceUrl || ''));
+let sourceUrl = decodeURIComponent(String(route.query.source_url || ''));
 try {
     sourceUrl = atob(sourceUrl)
 } catch (error) {}
@@ -66,7 +66,7 @@ if (route.query.language) {
 
 const error = ref("")
 const regType = ref<String>(String(route.query.reg_type || webTs.getRequest(sourceUrl,'reg_type') || '') || "web")
-const showType = ref(1)
+const showType = ref(3)
 const loadIng = ref<boolean>(false)
 const formRef = ref()
 const formData = ref({password: ""})
@@ -111,8 +111,8 @@ onMounted(()=>{
     }
 })
 
-const handleButton = () => {
-    window.location.href = webTs.addParamToUrl(sourceUrl,'pageType','reg');
+const handleButton = (type=1) => {
+    window.location.href = type == 2 ? webTs.addParamToUrl(sourceUrl,'pageType','reg') : sourceUrl;
 }
 
 const handleSetPass = () => {
