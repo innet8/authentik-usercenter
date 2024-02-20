@@ -19,6 +19,7 @@
 import { useRoute  } from 'vue-router';
 import { verifyRegisterEmail } from '@/api/modules/user';
 import { useMessage } from "@/utils/messageAll"
+import webTs from "@/utils/web"
 
 const route = useRoute()
 const message = useMessage()
@@ -29,6 +30,9 @@ let sourceUrl = decodeURIComponent(String(route.query.sourceUrl || ''));
 try {
     sourceUrl = atob(sourceUrl)
 } catch (error) {}
+if (route.query.language) {
+    sourceUrl = webTs.addParamToUrl(sourceUrl,'lang', route.query.language)
+}
 
 const handleActivate = () => {
     verifyRegisterEmail({
@@ -53,7 +57,7 @@ onMounted(()=>{
 })
 
 const handleButton = () => {
-    window.location.href = sourceUrl + (sourceUrl.indexOf('?') == -1 ? '?' : '&') + 'pageType=reg';
+    window.location.href = webTs.addParamToUrl(sourceUrl,'pageType','reg');
 }
 
 </script>
