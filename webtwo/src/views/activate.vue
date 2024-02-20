@@ -9,7 +9,7 @@
             <div v-else class="activate-box">
                 <img class="m-auto block " src="@/statics/images/icon/invalid.svg">
                 <p class="text-24  text-center text-text-li mt-36">{{ error }}</p>
-                <n-button v-if="callback" class="w-full mt-36" @click="handleButton" :type="'primary'">{{ $t("返回注册") }}</n-button>
+                <n-button v-if="error" class="w-full mt-36" @click="handleButton" :type="'primary'">{{ $t("返回注册") }}</n-button>
             </div>
         </div>
     </div>
@@ -23,7 +23,6 @@ import { useMessage } from "@/utils/messageAll"
 const route = useRoute()
 const message = useMessage()
 const error = ref("")
-const callback = ref("")
 
 // 来源
 let sourceUrl = decodeURIComponent(String(route.query.sourceUrl || ''));
@@ -48,14 +47,13 @@ const handleActivate = () => {
 }
 
 onMounted(()=>{
-    route.query.callback && (callback.value = route.query.callback + '')
     if(route.query.code){
         handleActivate()
     }
 })
 
 const handleButton = () => {
-    window.location.href = callback.value;
+    window.location.href = sourceUrl + (sourceUrl.indexOf('?') == -1 ? '?' : '&') + 'pageType=reg';
 }
 
 </script>
