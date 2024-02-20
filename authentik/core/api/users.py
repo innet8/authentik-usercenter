@@ -5,6 +5,7 @@ import hashlib
 import random
 import re
 import uuid
+import urllib.parse
 from datetime import timedelta
 from io import BytesIO
 from json import loads
@@ -811,10 +812,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     + "page/activate?code="
                     + md5_hash
                     + "&source_url="
-                    + source_url
+                    + urllib.parse.quote_plus(source_url)
                     + "&language="
                     + lang
                 )  # 消息内容
+
 
                 result = mail.send_mail(
                     subject=subject,  # 题目
@@ -1345,7 +1347,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             + "api/v3/core/users/verify_retrieve_password/?code="
             + md5_hash
             + "&source_url="
-            + source_url
+            + urllib.parse.quote_plus(source_url)
             + "&lang="
             + lang
         )
@@ -1424,28 +1426,23 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         """验证忘记密码链接"""
         code = request.query_params.get("code")
         lang = request.query_params.get("lang")
-        source_url = request.query_params.get("source_url") + "?lang=" + lang
-        if not code:
-            return self.errUserResponse("", "code不能为空")
+        source_url = request.query_params.get("source_url")
         username = cache.get(code)
-        if not username:
-            # "链接已失效，请重新提交请求"
-            if lang in ('zh-cn', 'zh'):
-                return Response('链接已失效，请重新提交请求', status=200)
-            if lang in ('zh-tw', 'tc', 'zh-CHT'):
-                return Response('連結已失效，請重新提交請求', status=200)
-            return Response('The link is no longer available, please resubmit the request', status=200)
-
+        if not code or not username:
+            return redirect(
+                CONFIG.get("app_url")
+                + "page/invalid?type=password"
+                + "&source_url=" + urllib.parse.quote_plus(source_url + ("&" if '?' in source_url else "?") + "pageType=forgot")
+                + "&language=" + lang
+            )
+        #
         user = User.objects.filter(username=username).first()
         if user:
             return redirect(
                 CONFIG.get("app_url")
-                + "page/resetPassword?link_code="
-                + code
-                + "&source_url="
-                + source_url
-                + "&language="
-                + lang
+                + "page/resetPassword?link_code=" + code
+                + "&source_url=" + urllib.parse.quote_plus(source_url)
+                + "&language=" + lang
             )
         else:
             return self.errUserResponse("", "用户不存在")
@@ -1611,7 +1608,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             + "page/activate?code="
             + md5_hash
             + "&source_url="
-            + source_url
+            + urllib.parse.quote_plus(source_url)
             + "&language="
             + lang
         )
@@ -1679,7 +1676,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     + "page/activate?code="
                     + md5_hash
                     + "&source_url="
-                    + source_url
+                    + urllib.parse.quote_plus(source_url)
                     + "&language="
                     + lang
                 )  # 消息内容

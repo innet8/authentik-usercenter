@@ -6,20 +6,20 @@
                     <span>{{ config.title || formTitle }}</span>
                 </h2>
                 <!-- <p class="login-subtitle">
-                    {{ config.subtitle || loginType == 'reg' ? $t("输入您的信息以创建帐户") : $t("输入您的凭证以访问您的帐户") }}
+                    {{ config.subtitle || pageType == 'reg' ? $t("输入您的信息以创建帐户") : $t("输入您的凭证以访问您的帐户") }}
                 </p> -->
                 <transition name="login-mode">
                     <n-form ref="formRef" :rules="rules" v-if="show" label-placement="left" :show-require-mark="false" :model="formData">
                         <div v-if="loginMode == 'access'" class="login-access">
-                            <div class="bg-[#F8F8F8] rounded px-16 py-12 mb-24" v-if="loginType == 'forgot'">
+                            <div class="bg-[#F8F8F8] rounded px-16 py-12 mb-24" v-if="pageType == 'forgot'">
                                 <p class=" text-text-tips text-14 "> {{ $t('输入与您的账号关联的电子邮件地址，我们将向您发送一个链接以重置您的密码。') }}
                                 </p>
                             </div>
                             <n-form-item  path="email"
-                                v-if="loginType == 'reg' || loginType == 'login' || loginType == 'forgot'">
+                                v-if="pageType == 'reg' || pageType == 'login' || pageType == 'forgot'">
                                 <n-input v-model:value="formData.email" @blur="onBlur" :maxlength="100" :placeholder="
-                                    loginType == 'reg' ? $t('请输入注册邮箱') :
-                                    loginType == 'forgot' ? $t('请输入邮箱地址') : $t('请输入用户账号')
+                                    pageType == 'reg' ? $t('请输入注册邮箱') :
+                                    pageType == 'forgot' ? $t('请输入邮箱地址') : $t('请输入用户账号')
                                 "
                                     clearable>
                                     <template #prefix>
@@ -28,17 +28,17 @@
                                 </n-input>
                             </n-form-item>
                             <n-form-item  path="password"
-                                v-if="loginType == 'reg' || loginType == 'login'">
+                                v-if="pageType == 'reg' || pageType == 'login'">
                                 <n-input type="password" v-model:value="formData.password" @blur="onBlur" :maxlength="24"
                                     :placeholder="
-                                        loginType == 'reg' ? $t('请设置登录密码') :$t('请输入登录密码')
+                                        pageType == 'reg' ? $t('请设置登录密码') :$t('请输入登录密码')
                                     " clearable>
                                     <template #prefix>
                                         <n-icon :component="LockClosed" />
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-form-item path="code" v-if="codeNeed && loginType == 'login'">
+                            <n-form-item path="code" v-if="codeNeed && pageType == 'login'">
                                 <n-input class="code-load-input" v-model:value="formData.code" :placeholder="$t('输入图形验证码')" :maxlength="5"
                                     clearable>
                                     <template #prefix>
@@ -55,7 +55,7 @@
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <n-form-item  path="confirmPassword" v-if="loginType == 'reg'">
+                            <n-form-item  path="confirmPassword" v-if="pageType == 'reg'">
                                 <n-input type="password" v-model:value="formData.confirmPassword" :maxlength="24"
                                     :placeholder="$t('请输入确认密码')" clearable>
                                     <template #prefix>
@@ -63,21 +63,21 @@
                                     </template>
                                 </n-input>
                             </n-form-item>
-                            <div class="" v-if="loginType == 'regSuccess'">
+                            <div class="" v-if="pageType == 'regSuccess'">
                                 <p class="text-text-li text-16 font-normal" style="word-break: break-all;">
                                     {{ $t('我们发送邮件至') }}
                                     <span class="text-[#0C9189]"> {{ formData.email }} </span>
                                     <p class="mt-12">{{ $t('请点击我们刚刚发送到您收件箱的链接来确认您的电子邮件地址') }}</p>
                                 </p>
                             </div>
-                            <div class="" v-if="loginType == 'secure'">
+                            <div class="" v-if="pageType == 'secure'">
                                 <p class="text-text-li text-16 font-normal text-center">
                                     {{ $t('平台已对账号系统进行了全面升级，请点击我们刚刚发送到您收件箱') }}
                                     <span class=" text-[#0C9189]">（{{ formData.email }}）</span>
                                     {{ $t('的链接来重新设置登录密码') }}</p>
                             </div>
                             <div class="login-switch" v-if="config.switch !== 'false'">
-                                <template v-if="loginType == 'login'">
+                                <template v-if="pageType == 'login'">
                                     <div class="flex items-center justify-between">
                                         <p>
                                             {{ $t("还没有账号？") }}
@@ -90,7 +90,7 @@
 
                                 </template>
 
-                                <template v-if="loginType == 'reg'">
+                                <template v-if="pageType == 'reg'">
                                     <div class="flex items-center justify-between">
                                         <p>
                                             {{ $t("已经有账号？") }}
@@ -102,34 +102,34 @@
 
                                 </template>
 
-                                <template v-if="loginType == 'forgot'">
+                                <template v-if="pageType == 'forgot'">
                                     <a href="javascript:void(0)" @click="changeLoginType('login')"> {{ $t("返回登录") }}</a>
                                 </template>
                             </div>
-                            <n-button v-if="loginType == 'login'" :loading="loadIng" @click="handleLogin"
+                            <n-button v-if="pageType == 'login'" :loading="loadIng" @click="handleLogin"
                                 :type="config.btncolor">{{ $t("登录") }}</n-button>
-                            <n-button v-if="loginType == 'reg'" type="primary" :loading="loadIng" @click="handleReg">{{
+                            <n-button v-if="pageType == 'reg'" type="primary" :loading="loadIng" @click="handleReg">{{
                                 $t("注册") }}</n-button>
-                            <n-button v-if="loginType == 'regSuccess'" type="primary" :disabled="resendCTime > 0"
+                            <n-button v-if="pageType == 'regSuccess'" type="primary" :disabled="resendCTime > 0"
                                 :loading="loadIng" @click="handleResend">{{ resendCTime > 0 ? $t("重新发送") +
                                     `(${resendCTime}s)`
                                     : $t("重新发送验证邮件") }}</n-button>
-                            <n-button v-if="loginType == 'secure'" type="primary" :disabled="resetTime > 0"
+                            <n-button v-if="pageType == 'secure'" type="primary" :disabled="resetTime > 0"
                                 :loading="loadIng" @click="handleReset">{{ resetTime > 0 ? $t("重新发送") +
                                     `(${resetTime}s)`
                                     : $t("重新发送邮件") }}</n-button>
-                            <n-button v-if="loginType == 'forgot'" type="primary" :loading="loadIng"
+                            <n-button v-if="pageType == 'forgot'" type="primary" :loading="loadIng"
                                 :disabled="resetTime > 0" @click="handleReset">
                                 {{ resetTime > 0 ? $t("重新发送") + `(${resetTime}s)` : $t("请求重置密码") }}
                             </n-button>
-                            <template v-if="loginType == 'regSuccess'">
+                            <template v-if="pageType == 'regSuccess'">
                                 <p class="flex justify-center mt-16 text-14 text-text-tips">
                                     {{ $t("已验证完邮箱或更换邮箱？") }}
                                     <a class=" text-primary-color no-underline ml-5" href="javascript:void(0)" @click="changeLoginType('login')"> {{ $t("返回登录/注册") }}</a>
                                 </p>
                             </template>
                             <div class="flex justify-center mt-32"
-                                v-if="loginType == 'forgot' || loginType == 'reg' || loginType == 'login'">
+                                v-if="pageType == 'forgot' || pageType == 'reg' || pageType == 'login'">
                                 <n-dropdown trigger="click" :options="options" @select="setLanguage">
                                     <span class="flex items-center cursor-pointer text-14 gap-1 text-text-li"><img
                                             src="../statics/images/icon/global.svg">{{ languageLabel }} <n-icon
@@ -156,6 +156,13 @@ import webTs from "@/utils/web"
 
 const message = useMessage()
 const route = useRoute()
+
+// 来源
+let sourceUrl = decodeURIComponent(String(route.query.sourceUrl || ''));
+try {
+    sourceUrl = atob(sourceUrl)
+} catch (error) {}
+
 const loadIng = ref<boolean>(false)
 const codeUrl = ref("")
 const codeLoad = ref(0)
@@ -166,7 +173,7 @@ const codeNeed = ref(false)
 const show = ref(true)
 const resendCTime = ref(0)
 const resetTime = ref(0)
-const loginType = ref<String>("login")
+const pageType = ref<String>(String(route.query.pageType || webTs.getRequest(sourceUrl,'pageType') || '') || "login")
 const formRef = ref(null)
 const formData = ref({
     email: "",
@@ -195,20 +202,20 @@ const languageLabel = computed(() => {
     return result
 })
 
-// 路由参数配置
+//
 const config = ref({
-    language: route.query.language || 'zh-CHT',         //  显示语言 - en、zh、zh-cht、fr、id、ja、ko
+    language: route.query.language || 'zh-CHT',    //  显示语言 - en、zh、zh-cht、fr、id、ja、ko
     source: route.query.source || '',              //  来源
-    sourceUrl: route.query.sourceUrl || '',              //  来源URL
+    sourceUrl: sourceUrl.split('?')[0] || '',      //  来源URL
     callback: route.query.callback || '',          //  登录成功后浏览器去往的地址
     title: route.query.title || '',                //  标题
     subtitle: route.query.subtitle || '',          //  标题下方的描述
-    switch: route.query.switch || 'true',           //  打开切换注册的按钮
+    switch: route.query.switch || 'true',          //  打开切换注册的按钮
     color: route.query.color || '',                //  字体色 - 透明色：transparent 白色：white
     bgcolor: route.query.bgColor || 'white',       //  背景色 - 透明色：transparent 白色：white
     shadow: route.query.shadow || '',              //  阴影 - 不显示：none
     btncolor: route.query.btnColor || 'primary',   //  按钮色 - default、tertiary、primary、info、success、warning 和 error
-    theme: route.query.theme || 'default',       //  主题
+    theme: route.query.theme || 'default',         //  主题
 })
 
 // 样式
@@ -223,7 +230,7 @@ const rules = ref({
         required: true,
         validator(rule: FormItemRule, value: string) {
             if (!value) {
-                return new Error(loginType.value == 'forgot' ? $t('请输入邮箱地址') : $t('请输入用户账号'))
+                return new Error(pageType.value == 'forgot' ? $t('请输入邮箱地址') : $t('请输入用户账号'))
             }
             return true
         },
@@ -254,7 +261,7 @@ const rules = ref({
 })
 
 watch(
-    () => loginType.value,
+    () => pageType.value,
     () => {
         show.value = false;
         nextTick(()=>{
@@ -266,16 +273,16 @@ watch(
 
 const formTitle = computed(() => {
     let result = $t('登录到您的AK账号')
-    if (loginType.value == 'reg') {
+    if (pageType.value == 'reg') {
         result = $t('创建您的AK账号')
     }
-    if (loginType.value == 'regSuccess') {
+    if (pageType.value == 'regSuccess') {
         result = $t('请确认您的邮箱地址')
     }
-    if (loginType.value == 'forgot') {
+    if (pageType.value == 'forgot') {
         result = $t('忘记密码')
     }
-    if (loginType.value == 'secure') {
+    if (pageType.value == 'secure') {
         result = $t('账号安全升级')
     }
     return result
@@ -313,7 +320,7 @@ const handleLogin = () => {
             username: formData.value.email,
             password: formData.value.password,
             pic_code: formData.value.code,
-            source_url: config.value.sourceUrl || '',
+            source_url: sourceUrl || '',
         }).then(({ data, msg }) => {
             userState.info = data
             if (callback) {
@@ -322,8 +329,7 @@ const handleLogin = () => {
             } else {
                 parent.window.location.href = parent.window.location.origin + `/page/success?language=${config.value.language}&ak-token=${data.token}`
             }
-        })
-        .catch(res => {
+        }).catch(res => {
             loadIng.value = false
             refreshCode()
             if (res.data == "needcode") {
@@ -333,7 +339,7 @@ const handleLogin = () => {
                 message.error($t(res.msg))
             }
             if (res.code == "10") {
-                loginType.value = 'secure'
+                pageType.value = 'secure'
                 handleReset();
             }
         })
@@ -363,10 +369,10 @@ const handleReg = () => {
             username: formData.value.email,
             password: formData.value.password,
             source: (config.value.source + '') || 'sys-web',
-            source_url: config.value.sourceUrl || '',
+            source_url: sourceUrl,
         }).then(({ data, msg }) => {
             message.success($t("注册成功"))
-            loginType.value = "regSuccess"
+            pageType.value = "regSuccess"
             resendCTime.value = 120
             let times = setInterval(() => {
                 resendCTime.value--;
@@ -375,12 +381,11 @@ const handleReg = () => {
                 }
             }, 1000);
 
+        }).catch(res => {
+            message.error($t(res.msg))
+        }).finally(() => {
+            loadIng.value = false
         })
-            .catch(res => {
-                message.error($t(res.msg))
-            }).finally(() => {
-                loadIng.value = false
-            })
     }).catch(_ => { })
 }
 
@@ -393,7 +398,7 @@ const handleResend = () => {
     resend({
         username: formData.value.email,
         language: route.query.language,
-        source_url: config.value.sourceUrl || '',
+        source_url: sourceUrl || '',
     }).then(({ data, msg }) => {
         message.success($t("重新发送成功！"))
         resendCTime.value = 120
@@ -403,13 +408,11 @@ const handleResend = () => {
                 clearInterval(times);
             }
         }, 1000);
+    }).catch(res => {
+        message.error($t(res.msg))
+    }).finally(() => {
+        loadIng.value = false
     })
-        .catch(res => {
-            message.error($t(res.msg))
-        }).finally(() => {
-            loadIng.value = false
-        })
-
 }
 
 // 找回密码
@@ -422,7 +425,7 @@ const handleReset = () => {
         resetPassword({
             step: 1,
             username: formData.value.email,
-            source_url: config.value.sourceUrl || '',
+            source_url: sourceUrl,
         }).then(({ data, msg }) => {
             message.success($t(msg))
             resetTime.value = 120
@@ -442,13 +445,13 @@ const handleReset = () => {
 
 // 变更登录类型
 const changeLoginType = (e) => {
-    loginType.value = e
+    pageType.value = e
 
 }
 
 // 判断要不要验证码
 const onBlur = () => {
-    if (loginType.value != 'login') return
+    if (pageType.value != 'login') return
     const upData = {
         username: formData.value.email,
     }
@@ -467,7 +470,6 @@ const onBlur = () => {
 const refreshCode = () => {
     codeUrl.value = webTs.apiUrl(`/api/v3/core/users/picCode/?username=${formData.value.email}&_='` + Math.random())
 }
-
 
 </script>
 

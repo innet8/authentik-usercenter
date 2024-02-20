@@ -47,9 +47,14 @@ const rules = ref({
     },
 })
 
+// 来源
+let sourceUrl = decodeURIComponent(String(route.query.sourceUrl || ''));
+try {
+    sourceUrl = atob(sourceUrl)
+} catch (error) {}
+
 // 找回密码
 const handleReset = () => {
-    // if(!route.query.link_code)return
     formRef.value.validate().then(() => {
         loadIng.value = true
         resetPassword({
@@ -59,15 +64,13 @@ const handleReset = () => {
         }).then(({ data, msg }) => {
             message.success($t("重置成功！"))
             setTimeout(() => {
-                window.location.href = route.query.source_url.toString();
+                window.location.href = sourceUrl + (route.query.language ? "?lang=" + route.query.language : '');
             }, 3000);
+        }).catch(res => {
+            message.error($t(res.msg))
+        }).finally(() => {
+            loadIng.value = false
         })
-            .catch(res => {
-                message.error($t(res.msg))
-            }).finally(() => {
-                loadIng.value = false
-            })
-
     }).catch(() => {
 
     })

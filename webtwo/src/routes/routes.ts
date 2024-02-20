@@ -4,6 +4,7 @@ import Register from '@/views/register.vue'
 import Activate from '@/views/activate.vue'
 import ResetPassword from '@/views/resetPassword.vue'
 import Success from '@/views/success.vue'
+import Invalid from '@/views/invalid.vue'
 
 
 export const routes = [
@@ -36,5 +37,11 @@ export const routes = [
         path: "/page/success",
         meta: { title: $t('成功'), login: false },
         component: Success
+    },
+    {
+        name: "invalid",
+        path: "/page/invalid",
+        meta: { title: $t('失效'), login: false },
+        component: Invalid
     }
 ]

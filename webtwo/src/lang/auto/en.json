@@ -161,5 +161,10 @@
     "邮箱已存在": "Email already exists",
     "无效的验证码": "Invalid verification code",
     "验证码无效": "Invalid verification code.",
-    "邮件下发成功，请前往邮箱进行重置密码": "The email was successfully sent. Please go to your email to reset your password"
+    "邮件下发成功，请前往邮箱进行重置密码": "The email was successfully sent. Please go to your email to reset your password",
+    "失效": "Invalid",
+    "返回注册": "Return to Register",
+    "链接已失效，请重新发起": "The link has expired, please try again",
+    "链接已失效，请联系专属客服": "The link has expired, please contact dedicated customer service",
+    "返回重置密码": "Return to reset password"
 }
