@@ -1059,7 +1059,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def set_first_password(self, request: Request) -> Response:
         """验证邮箱后首次设置密码"""
-        
         if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
         pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
@@ -1075,7 +1074,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             user.save()
         else:
             return self.errUserResponse("", "用户不存在")
-        
+        cache.delete(pwd_key)
         return self.sucUserResponse("", "设置密码成功")
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
