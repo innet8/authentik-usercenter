@@ -761,7 +761,6 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
         if "password" not in request.data:
             return self.errUserResponse("", "密码不能为空")
-
         pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
         if not re.match(pattern2, request.data.get("password")):
             return self.errUserResponse("", "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
@@ -836,6 +835,99 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return self.errUserResponse("", str(exc))
             except Exception as e:
                 return self.errUserResponse("", f"邮件发送出现异常: {str(e)}")
+            
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def registerInitUser(self, request: Request) -> Response:
+        """添加未设置密码用户"""
+
+        if "username" not in request.data:
+            return self.errUserResponse("", "账号不能为空")
+        if len(request.data.get("username")) > 100:
+            return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
+        pattern1 = r"^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){1,100}$"
+        if not re.match(pattern1, request.data.get("username")):
+            return self.errUserResponse("", "账号必须为邮箱格式且最长100个字符")
+
+        if "source" not in request.data:
+            return self.errUserResponse("", "来源不能为空")
+
+        username = request.data.get("username")
+        source = request.data.get("source")
+        source_url = request.data.get("source_url", "")
+
+        if User.objects.filter(
+            username=request.data.get("username"), is_verify_email=True
+        ).exists():
+            return self.errUserResponse("", "账号已存在")
+
+        with atomic():
+            try:
+                oldUser = User.objects.filter(
+                    username=request.data.get("username"), is_verify_email=False
+                ).first()
+                if oldUser:
+                    oldUser.delete()
+                user: User = User.objects.create(
+                    username=username,
+                    email=username,
+                    name=username,
+                    type=UserTypes.EXTERNAL,
+                    path=source,
+                    is_verify_email=False,
+                )
+                user.save()
+                # 生成6位数字验证码
+                email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
+                hash_object = hashlib.md5(email_code.encode())
+                md5_hash = hash_object.hexdigest()
+                cache.set(md5_hash, username, 600)
+
+                lang = request.META.get('HTTP_LANGUAGE');
+                subject = "Mailbox verification"
+                if lang in ('zh-cn', 'zh'):
+                    subject = "邮箱验证"
+                if lang in ('zh-tw', 'tc', 'zh-CHT'):
+                    subject = "郵箱驗證"
+
+                # 设置密码key
+                pwd_code = "".join(str(random.randint(0, 9)) for _ in range(6))
+                pwd_hash_object = hashlib.md5(pwd_code.encode())
+                pwd_key = pwd_hash_object.hexdigest()
+
+                verification_link = (
+                    CONFIG.get("app_url")
+                    + "page/activate?code="
+                    + md5_hash
+                    + "&source_url="
+                    + source_url
+                    + "&language="
+                    + lang
+                    + "&reg_type=admin"
+                    + "&email="
+                    + username
+                    + "&pwd_key="
+                    + pwd_key
+                )  # 消息内容
+
+                result = mail.send_mail(
+                    subject=subject,  # 题目
+                    message="注册验证",
+                    from_email=self.get_mail_sender_name(lang),  # 发送者
+                    recipient_list=[username],  # 接收者邮件列表
+                    html_message=render_to_string(
+                        "email/verify_email.html",
+                        {"username": username, "verification_link": verification_link, "language": lang},
+                    ),
+                )
+                if result == 1:
+                    cache.set(pwd_key, username)
+                    return self.sucUserResponse("", "邮件发送成功")
+                else:
+                    return self.errUserResponse("", "邮件发送失败")
+            except IntegrityError as exc:
+                return self.errUserResponse("", str(exc))
+            except Exception as e:
+                return self.errUserResponse("", f"邮件发送出现异常: {str(e)}")
 
     @extend_schema(
         request=inline_serializer(
@@ -882,10 +974,10 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 return self.errUserResponse("", "账号已禁用")
             if user.type != UserTypes.EXTERNAL:
                 return self.errUserResponse("", "禁止登录")
-            if user.password == '':
-                return self.errUserResponse("", "请前往安全升级", 10)
             if not user.is_verify_email:
                 return self.errUserResponse("", "邮箱未验证")
+            if user.password == '':
+                return self.errUserResponse("", "请前往安全升级", 10)
             re = user.check_password(request.data.get("password"))
             if re:
                 # 设置 JWT 的 payload 数据
@@ -961,6 +1053,28 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         user.set_password(new_password)
         user.save()
         return self.sucUserResponse("", "更新密码成功")
+    
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def set_first_password(self, request: Request) -> Response:
+        """验证邮箱后首次设置密码"""
+        
+        if "password" not in request.data:
+            return self.errUserResponse("", "密码不能为空")
+        pattern2 = r"^(?:(?=.*[A-Z])(?=.*[a-z])|(?=.*[A-Z])(?=.*[0-9])|(?=.*[A-Z])(?=.*[^A-Za-z0-9])|(?=.*[a-z])(?=.*[0-9])|(?=.*[a-z])(?=.*[^A-Za-z0-9])|(?=.*[0-9])(?=.*[^A-Za-z0-9])).{6,24}$"
+        if not re.match(pattern2, request.data.get("password")):
+            return self.errUserResponse("", "密码: 6~24位，支持大小写字母、数字、英文特殊字符，需包含2种类型以上")
+        password = request.data.get("password")
+        pwd_key = request.data.get("pwd_key", "")
+        username = cache.get(pwd_key)
+
+        user = User.objects.filter(username=username, is_verify_email=True).first()
+        if user:
+            user.set_password(password)
+            user.save()
+        else:
+            return self.errUserResponse("", "用户不存在")
+        
+        return self.sucUserResponse("", "设置密码成功")
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def update_email(self, request: Request) -> Response:
@@ -1450,8 +1564,13 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     def verifyRegisterEmail(self, request: Request) -> Response:
         """验证注册邮箱"""
         code = request.query_params.get("code")
+        pwd_key = request.query_params.get("pwd_key", "")
         if not code:
             return self.errUserResponse("", "code不能为空")
+        email = request.data.get("email", "")
+        verifyUser = User.objects.filter(username=email, is_verify_email=True).first()
+        if verifyUser:
+            return self.sucUserResponse({"pwd_key": pwd_key}, "邮箱已验证", 2)
         username = cache.get(code)
         if not username:
             return self.errUserResponse("", "链接已失效，请重新注册")
@@ -1565,6 +1684,81 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     + lang
                 )  # 消息内容
 
+                result = mail.send_mail(
+                    subject=subject,  # 题目
+                    message="注册验证",
+                    from_email=self.get_mail_sender_name(lang),  # 发送者
+                    recipient_list=[username],  # 接收者邮件列表
+                    html_message=render_to_string(
+                        "email/verify_email.html",
+                        {"username": username, "verification_link": verification_link, "language": lang},
+                    ),
+                )
+                if result == 1:
+                    cache.set("EmailLock::" + username, 1, 120)
+                    return self.sucUserResponse("", "邮件发送成功")
+                else:
+                    return self.errUserResponse("", "邮件发送失败")
+            except IntegrityError as exc:
+                return self.errUserResponse("", str(exc))
+            except Exception as e:
+                return self.errUserResponse("", f"邮件发送出现异常: {str(e)}")
+    
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def reSendRegisterInitEmail(self, request: Request) -> Response:
+        """重新业务系统后台添加用户验证邮件"""
+        if not self.check_api_token(request):
+            return self.errUserResponse("", "INVALID TOKENk")
+        if "username" not in request.data:
+            return self.errUserResponse("", "账号不能为空")
+
+        username = request.data.get("username")
+        source_url = request.data.get("source_url", "")
+
+        user = User.objects.filter(username=request.data.get("username")).first()
+        if not user:
+            return self.errUserResponse("", "用户不存在")
+        if user.is_verify_email:
+            return self.errUserResponse("", "邮箱已验证")
+
+        with atomic():
+            try:
+                # 生成6位数字验证码
+                email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
+                hash_object = hashlib.md5(email_code.encode())
+                md5_hash = hash_object.hexdigest()
+                cache.set(md5_hash, username, 600)
+
+                lang = request.META.get('HTTP_LANGUAGE');
+                if not lang:
+                    lang = 'tc'
+                subject = "Mailbox verification"
+                if lang in ('zh-cn', 'zh'):
+                    subject = "邮箱验证"
+                if lang in ('zh-tw', 'tc', 'zh-CHT'):
+                    subject = "郵箱驗證"
+
+                # 设置密码key
+                pwd_code = "".join(str(random.randint(0, 9)) for _ in range(6))
+                pwd_hash_object = hashlib.md5(pwd_code.encode())
+                pwd_key = pwd_hash_object.hexdigest()
+
+                verification_link = (
+                    CONFIG.get("app_url")
+                    + "page/activate?code="
+                    + md5_hash
+                    + "&source_url="
+                    + source_url
+                    + "&language="
+                    + lang
+                    + "&reg_type=admin"
+                    + "&email="
+                    + username
+                    + "&pwd_key="
+                    + pwd_key
+                )  # 消息内容
+                
+                # 消息内容
                 result = mail.send_mail(
                     subject=subject,  # 题目
                     message="注册验证",
