@@ -33,3 +33,8 @@ export const resetPassword = (params: User.resetData) => {
 export const verifyRegisterEmail = (params: any) => {
     return http.get<any>("/core/users/verifyRegisterEmail/", params)
 }
+
+//首次激活设置密码
+export const setFirstPassword = (params: any) => {
+    return http.post<any>("/core/users/set_first_password/", params)
+}

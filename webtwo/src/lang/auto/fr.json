@@ -166,5 +166,10 @@
     "返回注册": "Retour à l'inscription",
     "链接已失效，请重新发起": "Le lien a expiré, veuillez réessayer",
     "链接已失效，请联系专属客服": "Le lien a expiré, merci de contacter le service client dédié",
-    "返回重置密码": "Revenir à la réinitialisation du mot de passe"
+    "返回重置密码": "Revenir à la réinitialisation du mot de passe",
+    "账号已激活，可直接登录": "Le compte a été activé et vous pouvez vous connecter directement",
+    "首次激活需要设置密码": "La première activation nécessite la définition d'un mot de passe",
+    "您的登录密码长度必须至少是6个字符，并且至少包含2种不同类型字符": "Votre mot de passe de connexion doit comporter au moins 6 caractères et contenir au moins 2 types de caractères différents",
+    "设置密码 ": "définir le mot de passe",
+    "請求失敗": "Demande échoué"
 }

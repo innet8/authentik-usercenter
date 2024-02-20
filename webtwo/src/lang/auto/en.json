@@ -166,5 +166,10 @@
     "返回注册": "Return to Register",
     "链接已失效，请重新发起": "The link has expired, please try again",
     "链接已失效，请联系专属客服": "The link has expired, please contact dedicated customer service",
-    "返回重置密码": "Return to reset password"
+    "返回重置密码": "Return to reset password",
+    "账号已激活，可直接登录": "The account has been activated and you can log in directly.",
+    "首次激活需要设置密码": "Password setting is required for initial activation.",
+    "您的登录密码长度必须至少是6个字符，并且至少包含2种不同类型字符": "Your password must be at least 6 characters long and include at least 2 different types of characters.",
+    "设置密码 ": "Set Password",
+    "請求失敗": "Request failed"
 }

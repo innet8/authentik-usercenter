@@ -2,7 +2,7 @@
     <div class="page-activate child-view">
         <div class="activate-body">
             <div class="activate-box">
-                <img class=" m-auto block rotate-image" src="@/statics/images/icon/invalid.svg">
+                <img class=" m-auto block" src="@/statics/images/icon/invalid.svg">
                 <p class="text-24  text-center text-text-li mt-36">{{ error }}</p>
                 <n-button v-if="btnText && source_url" class="w-full mt-36" @click="handleButton" :type="'primary'">{{ btnText }}</n-button>
             </div>

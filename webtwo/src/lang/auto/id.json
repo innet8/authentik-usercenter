@@ -166,5 +166,10 @@
     "返回注册": "Kembali ke pendaftaran",
     "链接已失效，请重新发起": "Tautan telah kedaluwarsa, silakan coba lagi",
     "链接已失效，请联系专属客服": "Tautan telah kedaluwarsa, silakan hubungi layanan pelanggan khusus",
-    "返回重置密码": "Kembali untuk mengatur ulang kata sandi"
+    "返回重置密码": "Kembali untuk mengatur ulang kata sandi",
+    "账号已激活，可直接登录": "Akun telah diaktifkan dan Anda dapat langsung login",
+    "首次激活需要设置密码": "Aktivasi pertama memerlukan pengaturan kata sandi",
+    "您的登录密码长度必须至少是6个字符，并且至少包含2种不同类型字符": "Kata sandi login Anda harus terdiri dari minimal 6 karakter dan berisi minimal 2 jenis karakter berbeda",
+    "设置密码 ": "mengatur kata sandi",
+    "請求失敗": "Permintaan gagal"
 }
