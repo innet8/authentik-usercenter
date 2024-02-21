@@ -171,5 +171,6 @@
     "首次激活需要设置密码": "La première activation nécessite la définition d'un mot de passe",
     "您的登录密码长度必须至少是6个字符，并且至少包含2种不同类型字符": "Votre mot de passe de connexion doit comporter au moins 6 caractères et contenir au moins 2 types de caractères différents",
     "设置密码 ": "définir le mot de passe",
-    "請求失敗": "Demande échoué"
+    "請求失敗": "Demande échoué",
+    "链接失效页面": "Page de liens brisés"
 }

@@ -171,5 +171,6 @@
     "首次激活需要设置密码": "Password setting is required for initial activation.",
     "您的登录密码长度必须至少是6个字符，并且至少包含2种不同类型字符": "Your password must be at least 6 characters long and include at least 2 different types of characters.",
     "设置密码 ": "Set Password",
-    "請求失敗": "Request failed"
+    "請求失敗": "Request failed",
+    "链接失效页面": "Broken link page"
 }

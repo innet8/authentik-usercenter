@@ -41,7 +41,7 @@ export const routes = [
     {
         name: "invalid",
         path: "/page/invalid",
-        meta: { title: $t('失效'), login: false },
+        meta: { title: $t('链接失效页面'), login: false },
         component: Invalid
     }
 ]
