@@ -798,7 +798,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
                 hash_object = hashlib.md5(email_code.encode())
                 md5_hash = hash_object.hexdigest()
-                cache.set(md5_hash, username, 600)
+                cache.set(md5_hash, username, 1800)
 
                 lang = request.META.get('HTTP_LANGUAGE');
                 subject = "Mailbox verification"
@@ -882,7 +882,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
                 hash_object = hashlib.md5(email_code.encode())
                 md5_hash = hash_object.hexdigest()
-                cache.set(md5_hash, username, 600)
+                cache.set(md5_hash, username, 1800)
 
                 lang = request.META.get('HTTP_LANGUAGE');
                 subject = "Mailbox verification"
@@ -1414,7 +1414,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             # 验证码已失效，请重新获取
             return False, "验证码无效"
         if md5_hash == val:
-            cache.set("code::" + username, "", 600)
+            cache.set("code::" + username, "", 1800)
             return True, "验证成功"
         else:
             return False, "验证码无效"
@@ -1598,7 +1598,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
         hash_object = hashlib.md5(email_code.encode())
         md5_hash = hash_object.hexdigest()
-        cache.set(md5_hash, username, 600)
+        cache.set(md5_hash, username, 1800)
 
         lang = request.META.get('HTTP_LANGUAGE');
         verification_link = (
@@ -1656,7 +1656,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                 email_code = "".join(str(random.randint(0, 9)) for _ in range(6))
                 hash_object = hashlib.md5(email_code.encode())
                 md5_hash = hash_object.hexdigest()
-                cache.set(md5_hash, username, 600)
+                cache.set(md5_hash, username, 1800)
 
                 lang = request.META.get('HTTP_LANGUAGE');
                 if not lang:
