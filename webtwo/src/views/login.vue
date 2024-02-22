@@ -330,7 +330,6 @@ const handleLogin = () => {
                 parent.window.location.href = parent.window.location.origin + `/page/success?language=${config.value.language}&ak-token=${data.token}`
             }
         }).catch(res => {
-            loadIng.value = false
             refreshCode()
             if (res.data == "needcode") {
                 onBlur()
@@ -342,6 +341,8 @@ const handleLogin = () => {
                 pageType.value = 'secure'
                 handleReset();
             }
+        }).finally(() => {
+            loadIng.value = false
         })
     }).catch(_ => { })
 }
