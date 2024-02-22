@@ -1562,10 +1562,11 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         pwd_key = request.query_params.get("pwd_key", "")
         if not code:
             return self.errUserResponse("", "code不能为空")
-        email = request.data.get("email", "")
-        verifyUser = User.objects.filter(username=email, is_verify_email=True).first()
-        if verifyUser:
-            return self.sucUserResponse({"pwd_key": pwd_key}, "邮箱已验证", 2)
+        email = request.query_params.get("email", "")
+        verify_user = User.objects.filter(username=email, is_verify_email=True).first()
+        if verify_user:
+            if verify_user.password != '':
+                return self.sucUserResponse({"pwd_key": pwd_key}, "邮箱已验证", 2)
         username = cache.get(code)
         if not username:
             return self.errUserResponse({"pwd_key": pwd_key}, "链接已失效，请重新注册", 3)
@@ -1574,8 +1575,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
             user.is_verify_email = True
             user.save()
             return self.sucUserResponse({"pwd_key": pwd_key}, "邮箱验证成功")
-        else:
-            return self.errUserResponse("", "用户不存在")
+        return self.errUserResponse("", "用户不存在")
 
     @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
     def sendRegisterVerifyEmail(self, request: Request) -> Response:

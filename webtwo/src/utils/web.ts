@@ -53,8 +53,10 @@ const webTs = {
         // 将参数字符串转换为对象
         let params = {};
         queryString.split('&').forEach(item => {
-            let parts = item.split('=');
-            params[parts[0]] = parts[1];
+            if (item) {
+                let parts = item.split('=');
+                params[parts[0]] = parts[1];
+            }
         });
 
         // 移除已有参数中的同名key

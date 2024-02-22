@@ -172,5 +172,6 @@
     "您的登录密码长度必须至少是6个字符，并且至少包含2种不同类型字符": "Kata sandi login Anda harus terdiri dari minimal 6 karakter dan berisi minimal 2 jenis karakter berbeda",
     "设置密码 ": "mengatur kata sandi",
     "請求失敗": "Permintaan gagal",
-    "链接失效页面": "Halaman tautan rusak"
+    "链接失效页面": "Halaman tautan rusak",
+    "设置成功！": "Penyiapan berhasil!"
 }

@@ -66,7 +66,7 @@ if (route.query.language) {
 
 const error = ref("")
 const regType = ref<String>(String(route.query.reg_type || webTs.getRequest(sourceUrl,'reg_type') || '') || "web")
-const showType = ref(3)
+const showType = ref(1)
 const loadIng = ref<boolean>(false)
 const formRef = ref()
 const formData = ref({password: ""})
@@ -122,11 +122,8 @@ const handleSetPass = () => {
             pwd_key: route.query.pwd_key || '',
             password: formData.value.password,
         }).then(({code, data, msg}) => {
-            message.success($t("激活成功！"))
-            showType.value = 3;
-            setTimeout(()=>{
-                window.location.href = webTs.addParamToUrl(sourceUrl,'pageType','');
-            },1000)
+            message.success($t("设置成功！"))
+            window.location.href = webTs.addParamToUrl(sourceUrl,'pageType','');
         }).catch(res => {
             message.error(res.msg)
         }).finally(() => {
