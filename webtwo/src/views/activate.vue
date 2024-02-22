@@ -90,7 +90,7 @@ const handleActivate = () => {
             showType.value = 2;
         } else {
             setTimeout(()=>{
-                window.location.href = sourceUrl;
+                window.location.href = webTs.addParamToUrl(sourceUrl,'pageType','');
             },2000)
         }
     }).catch(res => {
@@ -112,7 +112,7 @@ onMounted(()=>{
 })
 
 const handleButton = (type=1) => {
-    window.location.href = type == 2 ? webTs.addParamToUrl(sourceUrl,'pageType','reg') : sourceUrl;
+    window.location.href = type == 2 ? webTs.addParamToUrl(sourceUrl,'pageType','reg') : webTs.addParamToUrl(sourceUrl,'pageType','');
 }
 
 const handleSetPass = () => {
