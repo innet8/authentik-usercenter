@@ -124,6 +124,9 @@ const handleSetPass = () => {
         }).then(({code, data, msg}) => {
             message.success($t("激活成功！"))
             showType.value = 3;
+            setTimeout(()=>{
+                window.location.href = webTs.addParamToUrl(sourceUrl,'pageType','');
+            },1000)
         }).catch(res => {
             message.error(res.msg)
         }).finally(() => {
