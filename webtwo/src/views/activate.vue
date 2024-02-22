@@ -93,7 +93,7 @@ const handleActivate = () => {
             showType.value = 2;
         } else {
             setTimeout(()=>{
-                window.location.href = webTs.addParamToUrl(sourceUrl,'pageType','');
+                window.location.href = webTs.delParamToUrl(sourceUrl,'pageType');
             },2000)
         }
     }).catch(res => {
@@ -115,7 +115,7 @@ onMounted(()=>{
 })
 
 const handleButton = (type=1) => {
-    window.location.href = type == 2 ? webTs.addParamToUrl(sourceUrl,'pageType','reg') : webTs.addParamToUrl(sourceUrl,'pageType','');
+    window.location.href = type == 2 ? webTs.addParamToUrl(sourceUrl,'pageType','reg') : webTs.delParamToUrl(sourceUrl,'pageType');
 }
 
 const handleSetPass = () => {
@@ -126,7 +126,7 @@ const handleSetPass = () => {
             password: formData.value.password,
         }).then(({code, data, msg}) => {
             message.success($t("设置成功！"))
-            window.location.href = webTs.addParamToUrl(sourceUrl,'pageType','');
+            window.location.href = webTs.delParamToUrl(sourceUrl,'pageType');
         }).catch(res => {
             message.error(res.msg)
         }).finally(() => {

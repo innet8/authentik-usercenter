@@ -31,6 +31,7 @@ import { LockClosed } from "@vicons/ionicons5"
 import { resetPassword } from "@/api/modules/user"
 import { useMessage } from "@/utils/messageAll"
 import { useRoute } from 'vue-router'
+import webTs from "@/utils/web"
 
 const loadIng = ref<boolean>(false)
 const message = useMessage()
@@ -48,9 +49,15 @@ const rules = ref({
 })
 
 // 来源
-let sourceUrl = decodeURIComponent(String(route.query.sourceUrl || ''));
+let sourceUrl = decodeURIComponent(String(route.query.source_url || ''));
 try {
     sourceUrl = atob(sourceUrl)
+} catch (error) {}
+if (route.query.language) {
+    sourceUrl = webTs.addParamToUrl(sourceUrl,'lang', route.query.language)
+}
+try {
+    sourceUrl = webTs.delParamToUrl(sourceUrl,'auth_token')
 } catch (error) {}
 
 // 找回密码
@@ -64,8 +71,8 @@ const handleReset = () => {
         }).then(({ data, msg }) => {
             message.success($t("重置成功！"))
             setTimeout(() => {
-                window.location.href = sourceUrl + (route.query.language ? "?lang=" + route.query.language : '');
-            }, 3000);
+                window.location.href = webTs.delParamToUrl(sourceUrl,'pageType');
+            }, 1000);
         }).catch(res => {
             message.error($t(res.msg))
         }).finally(() => {
