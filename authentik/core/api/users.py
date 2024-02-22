@@ -1699,7 +1699,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     ),
                 )
                 if result == 1:
-                    cache.set("EmailLock::" + username, 1, 120)
+                    cache.set(pwd_key, username)
                     return self.sucUserResponse("", "邮件发送成功")
                 else:
                     return self.errUserResponse("", "邮件发送失败")
