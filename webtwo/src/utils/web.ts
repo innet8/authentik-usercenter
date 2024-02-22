@@ -78,13 +78,16 @@ const webTs = {
         return updatedUrl;
     },
     // 删除参数
-    delParamToUrl(url, key) {
-        // 创建一个 URL 对象
-        url = new URL(url);
-        // 从 URL 对象中删除指定参数
-        url.searchParams.delete(key);
-        // 生成新的 URL
-        return url.href;
+    delParamToUrl(urls, key) {
+        try {
+            // 创建一个 URL 对象
+            let url = new URL(urls);
+            // 从 URL 对象中删除指定参数
+            url.searchParams.delete(key);
+            // 生成新的 URL
+            urls = url.href;
+        } catch (error) {}
+        return urls
     }
 }
 export default webTs
