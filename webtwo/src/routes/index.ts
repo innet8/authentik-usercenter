@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { ref } from "vue";
 import { UserStore } from "@/store/user"
 import { GlobalStore } from "@/store"
+import { $t } from "@/lang/index"
 
 export const loadingBarApiRef = ref(null)
 
@@ -47,7 +48,7 @@ export default function createDemoRouter(app, routes) {
 
     router.afterEach(function (to, from) {
         if(to?.meta?.title){
-            document.title = to.meta.title + ''
+            document.title = $t(to.meta.title + '')
         }
         GlobalStore().setBaseRoute(to.params?.catchAll || '')
         if (!from || to.path !== from.path) {

@@ -97,8 +97,6 @@ export const GlobalStore = defineStore({
                     theme: this.themeName === "dark" ? darkTheme : null,
                 })),
             });
-            console.log(dialog);
-            
             return dialog;
         },
         timeout(ms: number, key: string, ...name) {
