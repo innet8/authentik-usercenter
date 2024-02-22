@@ -63,6 +63,9 @@ try {
 if (route.query.language) {
     sourceUrl = webTs.addParamToUrl(sourceUrl,'lang', route.query.language)
 }
+try {
+    sourceUrl = webTs.delParamToUrl(sourceUrl,'auth_token')
+} catch (error) {}
 
 const error = ref("")
 const regType = ref<String>(String(route.query.reg_type || webTs.getRequest(sourceUrl,'reg_type') || '') || "web")
