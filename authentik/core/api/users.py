@@ -901,7 +901,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
                     + "page/activate?code="
                     + md5_hash
                     + "&source_url="
-                    + source_url
+                    + urllib.parse.quote_plus(source_url)
                     + "&language="
                     + lang
                     + "&reg_type=admin"
