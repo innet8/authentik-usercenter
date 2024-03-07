@@ -1,5 +1,6 @@
 """User API Views"""
 import base64
+import binascii
 import datetime
 import hashlib
 import random
@@ -10,6 +11,11 @@ from datetime import timedelta
 from io import BytesIO
 from json import loads
 from typing import Any, Optional
+from Crypto.Cipher import PKCS1_v1_5
+from Crypto.PublicKey import RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 
 import jwt
 from django.conf import settings
@@ -88,6 +94,7 @@ from authentik.core.models import (
     TokenIntents,
     User,
     UserTypes,
+    Application,
 )
 from authentik.events.models import Event, EventAction
 from authentik.flows.exceptions import FlowNonApplicableException
@@ -1480,6 +1487,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if user:
             data = {
                 "id": user.id,
+                "uid": user.uid,
                 "last_login": user.last_login,
                 "username": user.username,
                 "first_name": user.first_name,
@@ -1787,12 +1795,176 @@ class UserViewSet(UsedByMixin, ModelViewSet):
         if attempts >= 4:
             return self.sucUserResponse("y", "请求成功")
         return self.sucUserResponse("n", "请求成功")
+    
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def authLogin(self, request: Request) -> Response:
+        """用户登录"""
+        if "username" not in request.data:
+            return self.errUserResponse("", "Missing parameter: username")
+        if "password" not in request.data:
+            return self.errUserResponse("", "Missing parameter: password")
+        if "app_id" not in request.data:
+            return self.errUserResponse("", "Missing parameter: app_id")
+        if "sign" not in request.data:
+            return self.errUserResponse("", "Missing parameter: sign")
+        _username = request.data.get("username")
+        _password = request.data.get("password")
+        _app_id = request.data.get("app_id")
+        _sign = request.data.get("sign")
+        if len(_username) > 100:
+            return self.errUserResponse("", "Parameter username cannot exceed 100 characters")
+        if len(_app_id) > 30:
+            return self.errUserResponse("", "app_id cannot exceed 30 characters")
+        application = Application.objects.filter(slug=_app_id).first()
+        if not application:
+            return self.errUserResponse("", "Invalid app_id")
 
-    def sucUserResponse(self, data="", msg="请求成功", code=1, status=200):
+        try:
+            user = User.objects.filter(username=_username).first()
+            if not user:
+                return self.errUserResponse("", "User does not exist")
+            if not user.is_active:
+                return self.errUserResponse("", "Account is disabled")
+        except IntegrityError as exc:
+            return self.errUserResponse("", str(exc))
+        
+        # rsa私钥解密密文密码
+        # private_key = CONFIG.get("auth_login_private_key")
+        private_key = cache.get(_sign)
+        if not private_key:
+            return self.errUserResponse("", "Signature expired")
+
+        # 待解密的数据
+        try:
+            encrypted_data = base64.b64decode(_password)
+        except binascii.Error as e:
+            # base64解码失败
+            return self.errUserResponse("", "Parameter password base64 decoding error")
+
+        # 解密数据
+        try:
+            # 创建 RSA 密钥对象
+            key = RSA.importKey(private_key)
+            # 使用密钥创建 PKCS1_v1_5 加密器对象
+            cipher = PKCS1_v1_5.new(key)
+            password = cipher.decrypt(encrypted_data, None)
+        except ValueError as e:
+            # 解密异常
+            return self.errUserResponse("", str(e))
+
+        checkRes = user.check_password(password)
+        if checkRes:
+            data = {
+                "username": user.username,
+                "nickname": user.name,
+                "openid": user.uid
+            }
+            cache.delete(_sign)
+            return self.sucUserResponse(data)
+        else:
+            return self.errUserResponse("", "Incorrect password")
+        
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def decryto(self, request: Request) -> Response:
+        """解密"""
+        if "str" not in request.data:
+            return self.errUserResponse("", "str不能为空")
+        _str = request.data.get("str")
+
+        # 加载私钥
+        private_key = CONFIG.get("auth_login_private_key")        
+        # 待解密的数据（假设为加密后的数据）
+        try:
+            encrypted_data = base64.b64decode(_str)
+        except binascii.Error as e:
+            # base64解码失败
+            return self.errUserResponse("", str(e))
+
+        # 解密数据
+        try:
+            # 创建 RSA 密钥对象
+            key = RSA.importKey(private_key)
+
+            # 使用密钥创建 PKCS1_v1_5 加密器对象
+            cipher = PKCS1_v1_5.new(key)
+            decrypted_data = cipher.decrypt(encrypted_data, None)
+        except ValueError as e:
+            # 解密异常
+            return self.errUserResponse("", str(e))
+        
+        data = {
+            "raw": decrypted_data
+        }
+        return self.sucUserResponse(data)
+    
+    @action(detail=False, methods=["GET"], permission_classes=[AllowAny])
+    def getAuthLoginPublicKey(self, request: Request) -> Response:
+        """获取公钥"""
+        # public_key = CONFIG.get("auth_login_public_key").encode('utf-8')
+        # encode_public_key = base64.b64encode(public_key)
+
+        # 生成私钥 key_size=1024 一次只能加密117长度
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=1024,
+            backend=default_backend()
+        )
+        # 生成公钥
+        public_key = private_key.public_key()
+        # 将私钥和公钥序列化为PEM格式
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        public_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        encode_public_key = base64.b64encode(public_pem)
+        hash_object = hashlib.md5(encode_public_key)
+        sign = hash_object.hexdigest()
+        cache.set(sign, private_pem, 60)
+        
+        data = {
+            "public_key": encode_public_key,
+            "sign": sign
+        }
+        return self.sucUserResponse(data)
+    
+    @action(detail=False, methods=["POST"], permission_classes=[AllowAny])
+    def createRSA(self, request: Request) -> Response:
+        """创建RSA密钥对"""
+        # 生成私钥 key_size=1024 一次只能加密117长度
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=1024,
+            backend=default_backend()
+        )
+        # 生成公钥
+        public_key = private_key.public_key()
+        # 将私钥和公钥序列化为PEM格式
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        public_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        
+        data = {
+            "private_pem": private_pem,
+            "public_pem": public_pem
+        }
+        return self.sucUserResponse(data)
+
+    def sucUserResponse(self, data="", msg="success", code=1, status=200):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
 
-    def errUserResponse(self, data="", msg="请求成功", code=0, status=200):
+    def errUserResponse(self, data="", msg="failed", code=0, status=200):
         response = {"data": data, "msg": msg, "code": code}
         return Response(response, status=status)
 
