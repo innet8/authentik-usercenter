@@ -6,7 +6,7 @@ UID = $(shell id -u)
 GID = $(shell id -g)
 NPM_VERSION = $(shell python -m scripts.npm_version)
 PY_SOURCES = authentik tests scripts lifecycle
-DOCKER_IMAGE ?= "authentik-usercenter:latest"
+DOCKER_IMAGE ?= "authentik-new:latest"
 
 pg_user := $(shell python -m authentik.lib.config postgresql.user 2>/dev/null)
 pg_host := $(shell python -m authentik.lib.config postgresql.host 2>/dev/null)
