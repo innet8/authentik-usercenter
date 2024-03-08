@@ -142,7 +142,7 @@ RUN apt-get update && \
     apt-get install -y dumb-init && \
     apt-get install -y --no-install-recommends runit && \
     apt-get clean && \
-    pip3 install psycopg && \
+    pip3 install psycopg2 && \
     rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/ && \
     adduser --system --no-create-home --uid 1000 --group --home /authentik authentik && \
     mkdir -p /certs /media /blueprints && \
