@@ -113,7 +113,7 @@ filterwarnings = [
 
 [tool.poetry]
 name = "authentik"
-version = "2023.10.2"
+version = "2023.10.3"
 description = ""
 authors = ["authentik Team <hello@goauthentik.io>"]
 
@@ -150,7 +150,6 @@ opencontainers = { extras = ["reggie"], version = "*" }
 packaging = "*"
 paramiko = "*"
 psycopg = { extras = ["c"], version = "*" }
-psycopg2 = { extras = ["c"], version = "*" }
 pycryptodome = "*"
 pydantic = "<3.0.0"
 pydantic-scim = "^0.0.8"
