@@ -129,7 +129,7 @@ ENV GIT_BUILD_HASH=$GIT_BUILD_HASH
 
 LABEL org.opencontainers.image.url https://goauthentik.io
 LABEL org.opencontainers.image.description goauthentik.io Main server image, see https://goauthentik.io for more info.
-LABEL org.opencontainers.image.source https://github.com/goauthentik/authentik
+LABEL org.opencontainers.image.source https://github.com/innet8/authentik-usercenter
 LABEL org.opencontainers.image.version ${VERSION}
 LABEL org.opencontainers.image.revision ${GIT_BUILD_HASH}
 
