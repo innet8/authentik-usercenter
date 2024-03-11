@@ -150,6 +150,7 @@ opencontainers = { extras = ["reggie"], version = "*" }
 packaging = "*"
 paramiko = "*"
 psycopg = { extras = ["c"], version = "*" }
+psycopg2 = { extras = ["c"], version = "*" }
 pycryptodome = "*"
 pydantic = "<3.0.0"
 pydantic-scim = "^0.0.8"
