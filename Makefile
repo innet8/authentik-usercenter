@@ -152,7 +152,8 @@ gen-client-go:  ## Build and install the authentik API for Golang
 gen-dev-config:  ## Generate a local development config file
 	python -m scripts.generate_config
 
-gen: gen-build gen-clean gen-client-ts
+# gen: gen-build gen-clean gen-client-ts
+gen: gen-build gen-clean
 
 #########################
 ## Web

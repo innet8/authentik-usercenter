@@ -30,7 +30,7 @@ RUN --mount=type=bind,target=/work/web/package.json,src=./web/package.json \
 
 COPY ./web /work/web/
 COPY ./website /work/website/
-COPY ./gen-ts-api /work/web/node_modules/@goauthentik/api
+# COPY ./gen-ts-api /work/web/node_modules/@goauthentik/api
 
 RUN npm run build
 
@@ -115,9 +115,11 @@ RUN --mount=type=bind,target=./pyproject.toml,src=./pyproject.toml \
     --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/.cache/pypoetry \
     python -m venv /ak-root/venv/ && \
+    /bin/bash -c "source /ak-root/venv/bin/activate && \
     pip3 install --upgrade pip && \
     pip3 install poetry && \
-    poetry install --only=main --no-ansi --no-interaction
+    poetry config virtualenvs.create false --local && \
+    poetry install --only=main --no-ansi --no-interaction --no-root"
 
 # Stage 6: Run
 FROM docker.io/python:3.11.5-slim-bookworm AS final-image
@@ -139,7 +141,6 @@ RUN apt-get update && \
     # Required for runtime
     apt-get install -y --no-install-recommends libpq5 openssl libxmlsec1-openssl libmaxminddb0 && \
     # Required for bootstrap & healtcheck
-    apt-get install -y dumb-init && \
     apt-get install -y --no-install-recommends runit && \
     apt-get clean && \
     rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/ && \
