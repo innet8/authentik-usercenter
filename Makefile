@@ -211,29 +211,29 @@ website-watch:  ## Build and watch the documentation website, updating automatic
 ## Webtwo
 #########################
 
-webtwo-build: webtwo-install  ## Build the Authentik UI
-	cd webtwo && npm run build
-
-webtwo-install:  ## Install the necessary libraries to build the Authentik UI
-	cd webtwo && npm ci
+# webtwo-build: webtwo-install  ## Build the Authentik UI
+# 	cd webtwo && npm run build
+#
+# webtwo-install:  ## Install the necessary libraries to build the Authentik UI
+# 	cd webtwo && npm ci
 
 #########################
 ## Docker
 #########################
-docker: gen-client-ts  ## Build a docker image of the current source tree
-	@if [ ! -f .env ]; then \
-		echo "PG_PASS=$$(openssl rand -base64 32)" >> .env; \
-		echo "AUTHENTIK_SECRET_KEY=$$(openssl rand -base64 32)" >> .env; \
-		echo "COMPOSE_PORT_HTTP=9000" >> .env; \
-	fi
-	DOCKER_BUILDKIT=1 docker build . --no-cache --progress plain --tag ${DOCKER_IMAGE} --load
-	docker-compose up -d
-
-docker-buildx:  ## Build a docker image of the current source tree
-	docker buildx install
-	docker buildx create --use --name romantic_black0
-	docker buildx ls
-	DOCKER_BUILDKIT=1 docker buildx build . --no-cache --progress plain --tag ${DOCKER_IMAGE} --load
+# docker: gen-client-ts  ## Build a docker image of the current source tree
+# 	@if [ ! -f .env ]; then \
+# 		echo "PG_PASS=$$(openssl rand -base64 32)" >> .env; \
+# 		echo "AUTHENTIK_SECRET_KEY=$$(openssl rand -base64 32)" >> .env; \
+# 		echo "COMPOSE_PORT_HTTP=9000" >> .env; \
+# 	fi
+# 	DOCKER_BUILDKIT=1 docker build . --no-cache --progress plain --tag ${DOCKER_IMAGE} --load
+# 	docker-compose up -d
+#
+# docker-buildx:  ## Build a docker image of the current source tree
+# 	docker buildx install
+# 	docker buildx create --use --name romantic_black0
+# 	docker buildx ls
+# 	DOCKER_BUILDKIT=1 docker buildx build . --no-cache --progress plain --tag ${DOCKER_IMAGE} --load
 
 #########################
 ## CI

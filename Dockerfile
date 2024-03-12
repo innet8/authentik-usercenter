@@ -35,16 +35,16 @@ COPY ./gen-ts-api /work/web/node_modules/@goauthentik/api
 RUN npm run build
 
 # Stage 2-2: Build webtwo
-FROM --platform=${BUILDPLATFORM} docker.io/node:21 as webtwo-builder
-ENV NODE_ENV=production
-WORKDIR /work/webtwo
-RUN --mount=type=bind,target=/work/webtwo/package.json,src=./webtwo/package.json \
-    --mount=type=bind,target=/work/webtwo/package-lock.json,src=./webtwo/package-lock.json \
-    --mount=type=cache,target=/root/.npm \
-    npm ci --include=dev
-
-COPY ./webtwo /work/webtwo/
-RUN npm run build
+#FROM --platform=${BUILDPLATFORM} docker.io/node:21 as webtwo-builder
+#ENV NODE_ENV=production
+#WORKDIR /work/webtwo
+#RUN --mount=type=bind,target=/work/webtwo/package.json,src=./webtwo/package.json \
+#    --mount=type=bind,target=/work/webtwo/package-lock.json,src=./webtwo/package-lock.json \
+#    --mount=type=cache,target=/root/.npm \
+#    npm ci --include=dev
+#
+#COPY ./webtwo /work/webtwo/
+#RUN npm run build
 
 # Stage 3: Build go proxy
 FROM --platform=${BUILDPLATFORM} docker.io/golang:1.21.3-bookworm AS go-builder
@@ -66,12 +66,12 @@ RUN --mount=type=bind,target=/go/src/goauthentik.io/go.mod,src=./go.mod \
 COPY ./cmd /go/src/goauthentik.io/cmd
 COPY ./authentik/lib /go/src/goauthentik.io/authentik/lib
 COPY ./web/static.go /go/src/goauthentik.io/web/static.go
-COPY ./webtwo/static.go /go/src/goauthentik.io/webtwo/static.go
-COPY --from=web-builder /work/web/robots.txt /go/src/goauthentik.io/web/robots.txt
-COPY --from=web-builder /work/web/security.txt /go/src/goauthentik.io/web/security.txt
-COPY --from=webtwo-builder /work/webtwo/robots.txt /go/src/goauthentik.io/webtwo/robots.txt
-COPY --from=webtwo-builder /work/webtwo/security.txt /go/src/goauthentik.io/webtwo/security.txt
-COPY --from=webtwo-builder /work/webtwo/dist /go/src/goauthentik.io/webtwo/dist
+#COPY ./webtwo/static.go /go/src/goauthentik.io/webtwo/static.go
+#COPY --from=web-builder /work/web/robots.txt /go/src/goauthentik.io/web/robots.txt
+#COPY --from=web-builder /work/web/security.txt /go/src/goauthentik.io/web/security.txt
+#COPY --from=webtwo-builder /work/webtwo/robots.txt /go/src/goauthentik.io/webtwo/robots.txt
+#COPY --from=webtwo-builder /work/webtwo/security.txt /go/src/goauthentik.io/webtwo/security.txt
+#COPY --from=webtwo-builder /work/webtwo/dist /go/src/goauthentik.io/webtwo/dist
 COPY ./internal /go/src/goauthentik.io/internal
 COPY ./go.mod /go/src/goauthentik.io/go.mod
 COPY ./go.sum /go/src/goauthentik.io/go.sum
